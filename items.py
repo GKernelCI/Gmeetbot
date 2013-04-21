@@ -128,7 +128,7 @@ class Topic(_BaseItem):
     text_template = """%(starttext)s%(topic)s%(endtext)s  (%(nick)s, %(time)s)"""
     mw_template = """%(startmw)s%(topic)s%(endmw)s  (%(nick)s, %(time)s)"""
     moin_template = """%(startmoin)s%(topic)s%(endmoin)s  (%(nick)s, %(time)s)"""
-    moin_template = """ *%(topic)s"""
+    moin_template = """=== %(topic)s ===\nThe discussion about \"%(topic)s\" started at %(time)s.\n"""
 
     startrst = '**'
     endrst = '**'
@@ -140,7 +140,7 @@ class Topic(_BaseItem):
     endmoin = ''
     def __init__(self, nick, line, linenum, time_):
         self.nick = nick ; self.topic = line ; self.linenum = linenum
-        self.time = time.strftime("%H:%M:%S", time_)
+        self.time = time.strftime("%H:%M", time_)
     def _htmlrepl(self, M):
         repl = self.get_replacements(M, escapewith=writers.html)
         repl['link'] = self.logURL(M)
@@ -186,7 +186,7 @@ class GenericItem(_BaseItem):
     moin_template = """''%(itemtype)s:'' %(startmw)s%(line)s%(endmw)s  (%(nick)s, %(time)s)"""
     def __init__(self, nick, line, linenum, time_):
         self.nick = nick ; self.line = line ; self.linenum = linenum
-        self.time = time.strftime("%H:%M:%S", time_)
+        self.time = time.strftime("%H:%M", time_)
     def _htmlrepl(self, M):
         repl = self.get_replacements(M, escapewith=writers.html)
         repl['link'] = self.logURL(M)
@@ -211,7 +211,6 @@ class GenericItem(_BaseItem):
         repl = self.get_replacements(M, escapewith=writers.moin)
         return self.moin_template%repl
 
-
 class Info(GenericItem):
     itemtype = 'INFO'
     html2_template = ("""<span class="%(itemtype)s">"""
@@ -223,16 +222,17 @@ class Info(GenericItem):
     rst_template = """%(startrst)s%(line)s%(endrst)s  (%(rstref)s_)"""
     text_template = """%(starttext)s%(line)s%(endtext)s  (%(nick)s, %(time)s)"""
     mw_template = """%(startmw)s%(line)s%(endmw)s  (%(nick)s, %(time)s)"""
-    moin_template = """%(startmoin)s%(line)s%(endmoin)s  (%(nick)s, %(time)s)"""
+    moin_template = """%(startmoin)s%(line)s%(endmoin)s"""
 class Idea(GenericItem):
     itemtype = 'IDEA'
 class Agreed(GenericItem):
     itemtype = 'AGREED'
 class Action(GenericItem):
     itemtype = 'ACTION'
+    moin_template = """''ACTION:'' %(line)s"""
 class Subtopic(GenericItem):
     itemtype = 'SUBTOPIC'
-    moin_template = """  *%(line)s  (%(nick)s, %(time)s)"""
+    moin_template = """ * '''%(line)s''' (%(time)s)"""
 class Help(GenericItem):
     itemtype = 'HELP'
 class Accepted(GenericItem):
@@ -260,7 +260,7 @@ class Link(_BaseItem):
     rst_template = """*%(itemtype)s*: %(startrst)s%(url)s %(line)s%(endrst)s  (%(rstref)s_)"""
     text_template = """%(itemtype)s: %(starttext)s%(url)s %(line)s%(endtext)s  (%(nick)s, %(time)s)"""
     mw_template = """''%(itemtype)s:'' %(startmw)s%(url)s %(line)s%(endmw)s  (%(nick)s, %(time)s)"""
-    moin_template = """''%(itemtype)s:'' %(startmw)s%(url)s %(line)s%(endmw)s  (%(nick)s, %(time)s)"""
+    moin_template = """''%(itemtype)s:'' %(startmw)s%(url)s %(line)s%(endmw)s"""
     def __init__(self, nick, line, linenum, time_):
         self.nick = nick ; self.linenum = linenum
         self.time = time.strftime("%H:%M:%S", time_)

@@ -37,6 +37,7 @@ import urllib
 
 import writers
 import items
+
 reload(writers)
 reload(items)
 
@@ -434,11 +435,16 @@ class MeetingCommands(object):
             self.votesrequired=0
         self.reply("votes now need %s to be passed"%self.votesrequired)
     def do_endvote(self, nick, line, **kwargs):
+        
         if not self.isChair(nick): return
+        
         """this vote is over, record the results"""
         if self.activeVote=="":
             self.reply("No vote in progress")
             return
+    
+       
+
         self.reply("Voting ended on: "+self.activeVote)
         #should probably just store the summary of the results
         vfor=0
@@ -451,20 +457,36 @@ class MeetingCommands(object):
                 vabstain+=1
             elif re.match("\+1",self.currentVote[v]):
                 vfor+=1
+    
+        voteResult = "Carried"
+
         self.reply("Votes for:"+str(vfor)+" Votes against:"+str(vagainst)+" Abstentions:"+str(vabstain))
         if vfor-vagainst>self.votesrequired:
             self.reply("Motion carried")
+            voteResult = "Carried"
         elif vfor-vagainst<self.votesrequired:
             self.reply("Motion denied")
+            voteResult = "Denied"
         else:
             if self.votesrequired==0:
                 self.reply("Deadlock, casting vote may be used")
+                voteResult = "Deadlock"
             else:
                 self.reply("Motion carried")
+                voteResult = "Carried"
         self.votes[self.activeVote]=[vfor,vabstain,vagainst]#store the results
-
+        
+        """Add informational item to the minutes."""
+        voteResultLog = "''Vote:'' "+self.activeVote+" ("+voteResult+")"
+        
+        m = items.Info(nick=nick, line=voteResultLog, **kwargs)
+        self.additem(m)
+        
         self.activeVote=""#allow another vote to be called
         self.currentVote={}
+        
+        
+
     def do_voters(self, nick,line,**kwargs):
         if not self.isChair(nick): return
         """provide a list of authorised voters"""
@@ -665,10 +687,10 @@ class Meeting(MeetingCommands, object):
 
         # Handle the logging of the line
         if line[:6] == 'ACTION':
-            logline = "%s * %s %s"%(time.strftime("%H:%M:%S", time_),
+            logline = "%s * %s %s"%(time.strftime("%H:%M", time_),
                                  nick, line[7:].strip())
         else:
-            logline = "%s <%s> %s"%(time.strftime("%H:%M:%S", time_),
+            logline = "%s <%s> %s"%(time.strftime("%H:%M", time_),
                                  nick, line.strip())
         self.lines.append(logline)
         linenum = len(self.lines)

@@ -90,7 +90,7 @@ class MeetBot(callbacks.Plugin):
         M = meeting_cache.get(Mkey, None)
 
         # Start meeting if we are requested
-        if payload[:13] == '#startmeeting':
+        if payload[:13].lower() == '#startmeeting':
             if M is not None:
                 irc.error("Can't start another meeting, one is in progress.")
                 return
@@ -114,7 +114,7 @@ class MeetBot(callbacks.Plugin):
                 (channel, network, time.ctime()))
             if len(recent_meetings) > 10:
                 del recent_meetings[0]
-        if payload[:7]=='#replay':
+        if payload[:7].lower() =='#replay':
             if M is not None:
                 irc.error("Can't replay logs while a meeting is in progress.")
                 return
