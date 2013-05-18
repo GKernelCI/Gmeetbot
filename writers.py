@@ -1,4 +1,4 @@
-# Richard Darst, June 2009
+﻿# Richard Darst, June 2009
 
 ###
 # Copyright (c) 2009, Richard Darst
@@ -108,7 +108,10 @@ class _BaseWriter(object):
         return {'pageTitle':self.pagetitle,
                 'owner':self.M.owner,
                 'starttime':time.strftime("%H:%M:%S", self.M.starttime),
+                'starttimeshort':time.strftime("%H:%M", self.M.starttime),
+                'startdate':time.strftime("%d %b", self.M.starttime),
                 'endtime':time.strftime("%H:%M:%S", self.M.endtime),
+                'endtimeshort':time.strftime("%H:%M", self.M.endtime),
                 'timeZone':self.M.config.timeZone,
                 'fullLogs':self.M.config.basename+'.log.html',
                 'fullLogsFullURL':self.M.config.filename(url=True)+'.log.html',
@@ -1189,8 +1192,10 @@ class Moin(_BaseWriter):
                 if haveTopic:
                     MeetingItems.append("") # line break
                 haveTopic = True
-            else:
+            elif m.itemtype == "SUBTOPIC":
                 if haveTopic: item = ""+item
+            else:
+                if haveTopic: item = "  * "+item
             MeetingItems.append(item)
         MeetingItems = '\n'.join(MeetingItems)
         return MeetingItems
@@ -1208,11 +1213,17 @@ class Moin(_BaseWriter):
         M = self.M
         # Votes
         Votes = [ ]
-        Votes.append(self.heading('Votes'))
+        Votes.append(self.heading('Vote results'))
         for m in M.votes:
             #differentiate denied votes somehow, strikethrough perhaps?
             Votes.append("\n * "+m)
-            Votes.append("   For: "+str(M.votes[m][0])+" Against: "+str(M.votes[m][2])+" Abstained: "+str(M.votes[m][1]))
+            motion = "Deadlock"
+            if(M.votes[m][0] > M.votes[m][1]):
+                motion = "Motion carried"
+            elif(M.votes[m][0] < M.votes[m][2]):
+                motion = "Motion denied"
+                
+            Votes.append("  * " + motion + " (For/Against/Abstained "+str(M.votes[m][0])+"/"+str(M.votes[m][2])+"/"+str(M.votes[m][1]) + ")")
         Votes = "\n".join(Votes)
         return Votes
 
@@ -1248,7 +1259,7 @@ class Moin(_BaseWriter):
                 if not headerPrinted:
                     ActionItemsPerson.append(" * %s"%moin(nick))
                     headerPrinted = True
-                ActionItemsPerson.append(" ** %s"%moin(m.line))
+                ActionItemsPerson.append("  * %s"%moin(m.line))
                 numberAssigned += 1
                 m.assigned = True
         # unassigned items:
@@ -1287,11 +1298,9 @@ class Moin(_BaseWriter):
 
 
     body_start = textwrap.dedent("""\
-            %(pageTitleHeading)s
-
-            sWRAPsMeeting started by %(owner)s at %(starttime)s
-            %(timeZone)s.  The full logs are available at
-            %(fullLogsFullURL)s .eWRAPe""")
+            == Meeting information ==
+             * %(pageTitleHeading)s, %(startdate)s at %(starttimeshort)s &mdash; %(endtimeshort)s %(timeZone)s
+             * Full logs at [[%(fullLogsFullURL)s]]""")
     def format(self, extension=None):
         """Return a MoinMoin formatted minutes summary."""
         M = self.M
@@ -1299,15 +1308,13 @@ class Moin(_BaseWriter):
         # Actual formatting and replacement
         repl = self.replacements()
         repl.update({'titleBlock':('='*len(repl['pageTitle'])),
-                     'pageTitleHeading':('#title '+repl['pageTitle'])
+                     'pageTitleHeading':(repl['pageTitle'])
                      })
 
 
         body = [ ]
         body.append(self.body_start%repl)
         body.append(self.meetingItems())
-        body.append(textwrap.dedent("""\
-            Meeting ended at %(endtime)s %(timeZone)s."""%repl))
         body.append(self.votes())
         body.append(self.actionItems())
         body.append(self.actionItemsPerson())
