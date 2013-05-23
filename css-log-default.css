@@ -13,3 +13,6 @@ body .topic     { color: #007020; font-weight: bold }
 body .topicline { color: #000080; font-weight: bold }
 body .cmd       { color: #007020; font-weight: bold }
 body .cmdline  { font-weight: bold }
+
+a {text-decoration:none;}
+a:hover {text-decoration:underline;}

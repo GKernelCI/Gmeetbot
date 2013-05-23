@@ -658,7 +658,7 @@ class Meeting(MeetingCommands, object):
         self.save(realtime_update=True)
         if re.match("\+1|0|\+0|-1",line):
             self.doCastVote(nick,line,time_)
-    def doCastVote(self, nick, line, time_=None):
+    def doCastVote(self, nick, line, time_=None, private=False):
             """if a vote is underway and the nick is a registered voter
             and has not already voted in this vote
             add the voter name and record the vote
@@ -668,11 +668,12 @@ class Meeting(MeetingCommands, object):
             if nick in self.voters or self.voters=={}:
                 if self.activeVote:
                     self.currentVote[nick]=line
-                    self.reply(line + " received from " + nick)
+                    if private is False:
+                        self.reply(line + " received from " + nick)
+						
             #if the vote was in a private message - how do we do that??
             #self.reply(line + " received from a private vote")
             #we do record the voter name in the voting structure even if private, so they can't vote twice
-            #we don't print that to the minutes or summary
 
     def addrawline(self, nick, line, time_=None):
         """This adds a line to the log, bypassing command execution.

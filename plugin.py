@@ -36,6 +36,7 @@ import supybot.callbacks as callbacks
 import supybot.ircmsgs as ircmsgs
 
 import time
+import re
 import meeting
 import supybotconfig
 # Because of the way we override names, we need to reload these in order.
@@ -124,6 +125,20 @@ class MeetBot(callbacks.Plugin):
                 (channel, network, time.ctime()))
             if len(recent_meetings) > 10:
                 del recent_meetings[0]
+                
+        """ private voting system """
+        if channel[:1] != '#' and re.match("\+1|0|\+0|-1",payload):
+            for key in meeting_cache.keys():
+                if payload.endswith(key[0]):
+                    voteMeeting = meeting_cache.get(key, None)
+                    if voteMeeting is not None:
+                        time_ = time.localtime()
+                        private = True
+                        voteMeeting.doCastVote(nick,payload,time_,private)
+                        irc.reply("received for vote " + voteMeeting.activeVote)
+                    else:
+                        irc.reply("No active meetings in this channel")
+        
 
         # If there is no meeting going on, then we quit
         if M is None: return
