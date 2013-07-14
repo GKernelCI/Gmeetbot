@@ -456,8 +456,8 @@ class HTMLlog2(_BaseWriter, _CSSmanager):
                                (html(m2.group(1)),html(m2.group(2))))
                 if m2 is None:
                     outline = html(line)
-                lines.append('<a name="l-%(lineno)s"></a>'
-                             '<span class="tm">%(time)s</span>'
+                lines.append('<a href="#l-%(lineno)s" name="l-%(lineno)s">'
+                             '<span class="tm">%(time)s</span></a>'
                              '<span class="nk">%(nick)s</span> '
                              '%(line)s'%{'lineno':lineNumber,
                                          'time':html(m.group('time')),
@@ -1216,7 +1216,7 @@ class Moin(_BaseWriter):
         Votes.append(self.heading('Vote results'))
         for m in M.votes:
             #differentiate denied votes somehow, strikethrough perhaps?
-            Votes.append("\n * "+m)
+            Votes.append(" * "+m)
             motion = "Deadlock"
             if(M.votes[m][0] > M.votes[m][1]):
                 motion = "Motion carried"
@@ -1264,12 +1264,12 @@ class Moin(_BaseWriter):
                 m.assigned = True
         # unassigned items:
         Unassigned = [ ]
-        Unassigned.append("* **UNASSIGNED**")
+        Unassigned.append(" * **UNASSIGNED**")
         numberUnassigned = 0
         for m in M.minutes:
             if m.itemtype != "ACTION": continue
             if getattr(m, 'assigned', False): continue
-            Unassigned.append(" ** %s"%moin(m.line))
+            Unassigned.append("  * %s"%moin(m.line))
             numberUnassigned += 1
         if numberUnassigned == 0:
             Unassigned.append(" * (none)")
