@@ -419,7 +419,7 @@ class MeetingCommands(object):
             self.reply("Voting still open on: " + self.activeVote)
             return
         self.reply("Please vote on: " + line.strip())
-        self.reply("Public votes can be registered by saying +1, +0 or -1 in channel, (private votes don't work yet, but when they do it will be by messaging the channel followed by +1/-1/+0 to me)")
+        self.reply("Public votes can be registered by saying +1, +0 or -1 in channel, (for private voting, private message me with 'vote +1/-1/+0 #channelname)")
         self.activeVote=line.strip()
         self.currentVote={}
         #need to set up a structure to hold vote results

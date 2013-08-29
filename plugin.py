@@ -125,21 +125,7 @@ class MeetBot(callbacks.Plugin):
                 (channel, network, time.ctime()))
             if len(recent_meetings) > 10:
                 del recent_meetings[0]
-                
-        """ private voting system """
-        if channel[:1] != '#' and re.match("\+1|0|\+0|-1",payload):
-            for key in meeting_cache.keys():
-                if payload.endswith(key[0]):
-                    voteMeeting = meeting_cache.get(key, None)
-                    if voteMeeting is not None:
-                        time_ = time.localtime()
-                        private = True
-                        voteMeeting.doCastVote(nick,payload,time_,private)
-                        irc.reply("received for vote " + voteMeeting.activeVote)
-                    else:
-                        irc.reply("No active meetings in this channel")
-        
-
+				
         # If there is no meeting going on, then we quit
         if M is None: return
         # Add line to our meeting buffer.
@@ -150,6 +136,28 @@ class MeetBot(callbacks.Plugin):
             #M.save()  # now do_endmeeting in M calls the save functions
             del meeting_cache[Mkey]
 
+    def vote(self, irc, msg, args):
+        nick = msg.nick
+        channel = msg.args[0]
+        payload = msg.args[1]
+        network = irc.msg.tags['receivedOn']
+        
+        """ sub string to remove 'vote ' from payload """
+        payload = payload[5:]
+		
+        """ private voting system """
+        if channel[:1] != '#' and re.match("\+1|0|\+0|-1",payload):
+            for key in meeting_cache.keys():
+                if payload.endswith(key[0]):
+                    voteMeeting = meeting_cache.get(key, None)
+                    if voteMeeting is not None:
+                        time_ = time.localtime()
+                        private = True
+                        voteMeeting.doCastVote(nick,payload,time_,private)
+                        irc.reply("received for vote '" + voteMeeting.activeVote + "'")
+                    else:
+                        irc.reply("No active meetings in this channel")
+			
     def outFilter(self, irc, msg):
         """Log outgoing messages from supybot.
         """
