@@ -1214,7 +1214,8 @@ class Moin(_BaseWriter):
         # Votes
         Votes = [ ]
         Votes.append(self.heading('Vote results'))
-        for m in M.votes:
+        # reversed to show the oldest first
+        for m in reversed(M.votes):
             # differentiate denied votes somehow, strikethrough perhaps?
             Votes.append(" * [[%(fullLogsFullURL)s#"+str(M.votes[m][3])+" "+m+"]]")
             motion = "Deadlock"
@@ -1227,7 +1228,7 @@ class Moin(_BaseWriter):
             if len(M.publicVoters[m]) > 0:
                 publicVoters = ', '.join(set(M.publicVoters[m]))
                 Votes.append("   *  Voters " + publicVoters)
-        Votes = "\n".join(reversed(Votes)) # reversed to show the oldest first
+        Votes = "\n".join(Votes) 
         return Votes
 
     def actionItems(self):
