@@ -235,6 +235,9 @@ class Subtopic(GenericItem):
     moin_template = """ * '''%(line)s''' (%(time)s)"""
 class Help(GenericItem):
     itemtype = 'HELP'
+class Done(GenericItem):
+    itemtype = 'DONE'
+    moin_template = """''ACTION:'' %(line)s"""
 class Accepted(GenericItem):
     itemtype = 'ACCEPTED'
     starthtml = '<font color="green">'

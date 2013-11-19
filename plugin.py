@@ -100,12 +100,15 @@ class MeetBot(callbacks.Plugin):
                 irc.sendMsg(ircmsgs.topic(channel, x))
             def _sendReply(x):
                 irc.sendMsg(ircmsgs.privmsg(channel, x))
+            def _sendPrivateReply(nick, x):
+                irc.sendMsg(ircmsgs.privmsg(nick, x))
             def _channelNicks():
                 return irc.state.channels[channel].users
             M = meeting.Meeting(channel=channel, owner=nick,
                                 oldtopic=irc.state.channels[channel].topic,
                                 writeRawLog=True,
                                 setTopic = _setTopic, sendReply = _sendReply,
+                                sendPrivateReply = _sendPrivateReply,
                                 getRegistryValue = self.registryValue,
                                 safeMode=True, channelNicks=_channelNicks,
                                 network=network,
