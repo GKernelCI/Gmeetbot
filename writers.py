@@ -1217,17 +1217,17 @@ class Moin(_BaseWriter):
         # reversed to show the oldest first
         if len(M.votes) > 0:
             for m in M.votes:
-                # differentiate denied votes somehow, strikethrough perhaps?
-                Votes.insert(0," * [[%(fullLogsFullURL)s#"+str(M.votes[m][3])+" "+m+"]]"))
                 motion = "Deadlock"
                 if(M.votes[m][0] > M.votes[m][1]):
                     motion = "Motion carried"
                 elif(M.votes[m][0] < M.votes[m][2]):
                     motion = "Motion denied"
-                Votes.insert(0,"  * " + motion + " (For/Against/Abstained "+str(M.votes[m][0])+"/"+str(M.votes[m][2])+"/"+str(M.votes[m][1]) + ")")
                 if len(M.publicVoters[m]) > 0:
                     publicVoters = ', '.join(set(M.publicVoters[m]))
                     Votes.insert(0, "   *  Voters " + publicVoters)
+                Votes.insert(0,"  * " + motion + " (For/Against/Abstained "+str(M.votes[m][0])+"/"+str(M.votes[m][2])+"/"+str(M.votes[m][1]) + ")")
+                # differentiate denied votes somehow, strikethrough perhaps?
+                Votes.insert(0," * [[%(fullLogsFullURL)s#"+str(M.votes[m][3])+" "+m+"]]"))
         Votes = "\n".join(Votes) 
         return Votes
 
