@@ -1218,7 +1218,7 @@ class Moin(_BaseWriter):
         if len(M.votes) > 0:
             for m in M.votes:
                 # differentiate denied votes somehow, strikethrough perhaps?
-                Votes.append(" * [[%(fullLogsFullURL)s#"+str(M.votes[m][3])+" "+m+"]]")
+                Votes.insert(0," * [[%(fullLogsFullURL)s#"+str(M.votes[m][3])+" "+m+"]]"))
                 motion = "Deadlock"
                 if(M.votes[m][0] > M.votes[m][1]):
                     motion = "Motion carried"
