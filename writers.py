@@ -1227,7 +1227,7 @@ class Moin(_BaseWriter):
                 Votes.insert(0,"  * " + motion + " (For/Against/Abstained "+str(M.votes[m][0])+"/"+str(M.votes[m][2])+"/"+str(M.votes[m][1]) + ")")
                 if len(M.publicVoters[m]) > 0:
                     publicVoters = ', '.join(set(M.publicVoters[m]))
-                    Votes.append("   *  Voters " + publicVoters)
+                    Votes.insert(0, "   *  Voters " + publicVoters)
         Votes = "\n".join(Votes) 
         return Votes
 
