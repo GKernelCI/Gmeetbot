@@ -1337,7 +1337,6 @@ class Moin(_BaseWriter):
         body.append(self.body_start%repl)
         body.append(self.meetingItems())
         body.append(self.votes()%repl)
-        body.append(self.actionItems())
         body.append(self.actionItemsPerson())
         body.append(self.doneItems())
         body.append(self.peoplePresent())
