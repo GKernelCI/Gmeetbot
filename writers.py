@@ -1224,7 +1224,7 @@ class Moin(_BaseWriter):
                     motion = "Motion carried"
                 elif(M.votes[m][0] < M.votes[m][2]):
                     motion = "Motion denied"
-                Votes[:0] = "  * " + motion + " (For/Against/Abstained "+str(M.votes[m][0])+"/"+str(M.votes[m][2])+"/"+str(M.votes[m][1]) + ")"
+                Votes.insert(0,"  * " + motion + " (For/Against/Abstained "+str(M.votes[m][0])+"/"+str(M.votes[m][2])+"/"+str(M.votes[m][1]) + ")")
                 if len(M.publicVoters[m]) > 0:
                     publicVoters = ', '.join(set(M.publicVoters[m]))
                     Votes.append("   *  Voters " + publicVoters)
