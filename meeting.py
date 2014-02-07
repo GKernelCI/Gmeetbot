@@ -299,7 +299,9 @@ class MeetingCommands(object):
         if not self.isChair(nick): return
         #close any open votes
         if not self.activeVote=="":
-            self.do_endvote(nick, line, **kwargs)
+            endVoteKwargs = {"linenum": kwargs.get('linenum',"0"),
+                 "time_": time.localtime()}
+            self.do_endvote(nick, line, **endVoteKwargs)
         if self.oldtopic:
             self.topic(self.oldtopic)
         self.endtime = time_
