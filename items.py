@@ -187,6 +187,10 @@ class GenericItem(_BaseItem):
     def __init__(self, nick, line, linenum, time_):
         self.nick = nick ; self.line = line ; self.linenum = linenum
         self.time = time.strftime("%H:%M", time_)
+    def __init__(self, nick, line, linenum):
+        time_ = time.localtime()
+        self.nick = nick ; self.line = line ; self.linenum = linenum
+        self.time = time.strftime("%H:%M", time_)
     def _htmlrepl(self, M):
         repl = self.get_replacements(M, escapewith=writers.html)
         repl['link'] = self.logURL(M)
