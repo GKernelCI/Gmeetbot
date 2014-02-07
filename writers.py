@@ -1214,17 +1214,21 @@ class Moin(_BaseWriter):
         # Votes
         Votes = [ ]
         Votes.append(self.heading('Vote results'))
-        for m in M.votes:
-            #differentiate denied votes somehow, strikethrough perhaps?
-            Votes.append(" * "+m)
+        # reversed to show the oldest first
+        for m in reversed(M.votes):
+            # differentiate denied votes somehow, strikethrough perhaps?
+            Votes.append(" * [[%(fullLogsFullURL)s#"+str(M.votes[m][3])+" "+m+"]]")
             motion = "Deadlock"
             if(M.votes[m][0] > M.votes[m][1]):
                 motion = "Motion carried"
             elif(M.votes[m][0] < M.votes[m][2]):
                 motion = "Motion denied"
-                
+            
             Votes.append("  * " + motion + " (For/Against/Abstained "+str(M.votes[m][0])+"/"+str(M.votes[m][2])+"/"+str(M.votes[m][1]) + ")")
-        Votes = "\n".join(Votes)
+            if len(M.publicVoters[m]) > 0:
+                publicVoters = ', '.join(set(M.publicVoters[m]))
+                Votes.append("   *  Voters " + publicVoters)
+        Votes = "\n".join(Votes) 
         return Votes
 
     def actionItems(self):
@@ -1281,6 +1285,23 @@ class Moin(_BaseWriter):
             return None
         else:
             return ActionItemsPerson
+            
+    def doneItems(self):
+        M = self.M
+        # Action Items
+        DoneItems = [ ]
+        numActionItems = 0
+        DoneItems.append(self.heading('Done items'))
+        for m in M.minutes:
+            # The hack below is needed because of pickling problems
+            if m.itemtype != "DONE": continue
+            #already escaped
+            DoneItems.append(" * %s"%moin(m.line))
+            numActionItems += 1
+        if numActionItems == 0:
+            DoneItems.append(" * (none)")
+        DoneItems = "\n".join(DoneItems)
+        return DoneItems
 
     def peoplePresent(self):
         M = self.M
@@ -1315,9 +1336,10 @@ class Moin(_BaseWriter):
         body = [ ]
         body.append(self.body_start%repl)
         body.append(self.meetingItems())
-        body.append(self.votes())
+        body.append(self.votes()%repl)
         body.append(self.actionItems())
         body.append(self.actionItemsPerson())
+        body.append(self.doneItems())
         body.append(self.peoplePresent())
         body.append(self.fullLog())
         body.append(textwrap.dedent("""\

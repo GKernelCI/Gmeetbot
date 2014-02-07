@@ -89,6 +89,8 @@ class Config(object):
     endMeetingMessage = ("Meeting ended %(endtime)s %(timeZone)s.  "
                          "\n"
                          "Minutes:        %(urlBasename)s.moin.txt")
+    endMeetingNotification = ("Meeting in %(channel)s has just ended")
+    endMeetingNotificationList = ["lderan"]
                          
     #TODO: endMeetingMessage should get filenames from the writers
 
@@ -285,6 +287,9 @@ class MeetingCommands(object):
         message = self.config.startMeetingMessage%repl
         for messageline in message.split('\n'):
             self.reply(messageline)
+        self.do_private_commands(self.owner)
+        for chair in self.chairs:
+            self.do_private_commands(chair)
         self.do_commands()
         if line.strip():
             self.do_meetingtopic(nick=nick, line=line, time_=time_, **kwargs)
@@ -294,7 +299,7 @@ class MeetingCommands(object):
         if not self.isChair(nick): return
         #close any open votes
         if not self.activeVote=="":
-            self.do_endvote(nick=nick,line=line,**kwargs)
+            self.do_endvote(nick, line, **kwargs)
         if self.oldtopic:
             self.topic(self.oldtopic)
         self.endtime = time_
@@ -304,7 +309,9 @@ class MeetingCommands(object):
         for messageline in message.split('\n'):
             self.reply(messageline)
         self._meetingIsOver = True
-
+        for nickToPM in self.config.endMeetingNotificationList:
+            self.privateReply(nickToPM, self.config.endMeetingNotification%repl)
+        
         
     def do_topic(self, nick, line, **kwargs):
         """Set a new topic in the channel."""
@@ -370,6 +377,7 @@ class MeetingCommands(object):
                     self.reply("Warning: Nick not in channel: %s"%chair)
                 self.addnick(chair, lines=0)
                 self.chairs.setdefault(chair, True)
+                self.do_private_commands(chair)
         chairs = dict(self.chairs) # make a copy
         chairs.setdefault(self.owner, True)
         self.reply("Current chairs: %s"%(" ".join(sorted(chairs.keys()))))
@@ -422,6 +430,10 @@ class MeetingCommands(object):
         self.reply("Public votes can be registered by saying +1, +0 or -1 in channel, (for private voting, private message me with 'vote +1/-1/+0 #channelname)")
         self.activeVote=line.strip()
         self.currentVote={}
+        self.publicVoters[self.activeVote] = []
+        #Need the line number for linking to the html output
+        self.currentVoteStartLine = 0
+        self.currentVoteStartLine = len(self.lines)
         #need to set up a structure to hold vote results
         #people can vote by saying +1 0 or -1
         #if voters have been specified then only they can vote
@@ -453,7 +465,7 @@ class MeetingCommands(object):
         for v in self.currentVote:
             if re.match("-1",self.currentVote[v]):
                 vagainst+=1
-            elif re.match("0|\+0",self.currentVote[v]):
+            elif re.match("0|\+0|-0",self.currentVote[v]):
                 vabstain+=1
             elif re.match("\+1",self.currentVote[v]):
                 vfor+=1
@@ -474,7 +486,8 @@ class MeetingCommands(object):
             else:
                 self.reply("Motion carried")
                 voteResult = "Carried"
-        self.votes[self.activeVote]=[vfor,vabstain,vagainst]#store the results
+        #store the results
+        self.votes[self.activeVote]=[vfor, vabstain, vagainst, self.currentVoteStartLine]
         
         """Add informational item to the minutes."""
         voteResultLog = "''Vote:'' "+self.activeVote+" ("+voteResult+")"
@@ -484,6 +497,7 @@ class MeetingCommands(object):
         
         self.activeVote=""#allow another vote to be called
         self.currentVote={}
+        self.currentVoteStartLine = 0
         
         
 
@@ -510,7 +524,11 @@ class MeetingCommands(object):
         voters = dict(self.voters) # make a copy
         #voters.setdefault(self.owner, True)#not sure about this if resetting voters to everyone - in fact why auto add the person calling #voters at all?
         self.reply("Current voters: %s"%(" ".join(sorted(voters.keys()))))
-
+    def do_private_commands(self, nick, **kwargs):
+        commands = [ "#"+x[3:] for x in dir(self) if x[:3]=="do_" ]
+        commands.sort()
+        message = "Available commands: "+(" ".join(commands))
+        self.privateReply(nick, message)
     # Commands for Anyone:
     def do_action(self, **kwargs):
         """Add action item to the minutes.
@@ -551,9 +569,14 @@ class MeetingCommands(object):
         m = items.Link(**kwargs)
         self.additem(m)
     def do_commands(self, **kwargs):
-        commands = [ "#"+x[3:] for x in dir(self) if x[:3]=="do_" ]
+        commands = ["action", "info", "idea", "nick", "link", "commands"]
         commands.sort()
         self.reply("Available commands: "+(" ".join(commands)))
+    def do_done(self, nick, **kwargs):
+        """Add aggreement to the minutes - chairs only."""
+        if not self.isChair(nick): return
+        m = items.Done(**kwargs)
+        self.additem(m)
 
 
 class Meeting(MeetingCommands, object):
@@ -561,7 +584,8 @@ class Meeting(MeetingCommands, object):
     _restrictlogs = False
     def __init__(self, channel, owner, oldtopic=None,
                  filename=None, writeRawLog=False,
-                 setTopic=None, sendReply=None, getRegistryValue=None,
+                 setTopic=None, sendReply=None, sendPrivateReply=None,
+                 getRegistryValue=None,
                  safeMode=False, channelNicks=None,
                  extraConfig={}, network='nonetwork'):
         self.config = Config(self, writeRawLog=writeRawLog, safeMode=safeMode,
@@ -570,6 +594,8 @@ class Meeting(MeetingCommands, object):
             self._registryValue = getRegistryValue
         if sendReply is not None:
             self._sendReply = sendReply
+        if sendPrivateReply is not None:
+            self._sendPrivateReply = sendPrivateReply
         if setTopic is not None:
             self._setTopic = setTopic
         self.owner = owner
@@ -585,8 +611,9 @@ class Meeting(MeetingCommands, object):
         self.attendees = {}
         self.chairs = {}
         self.voters = {}
-        self.votes={}
-        self.votesrequired=0
+        self.publicVoters = {}
+        self.votes = {}
+        self.votesrequired = 0
         self.activeVote = ""
         self._writeRawLog = writeRawLog
         self._meetingTopic = None
@@ -604,6 +631,10 @@ class Meeting(MeetingCommands, object):
             self._sendReply(self.config.enc(x))
         else:
             print "REPLY:", self.config.enc(x)
+    def privateReply(self, nick, x):
+        """Send a reply to nick"""
+        if hasattr(self, '_sendPrivateReply') and not self._lurk:
+            self._sendPrivateReply(self.config.enc(nick), self.config.enc(x))
     def topic(self, x):
         """Set the topic in the IRC channel."""
         if hasattr(self, '_setTopic') and not self._lurk:
@@ -656,7 +687,7 @@ class Meeting(MeetingCommands, object):
                 self.do_link(nick=nick, line=line,
                              linenum=linenum, time_=time_)
         self.save(realtime_update=True)
-        if re.match("\+1|0|\+0|-1",line):
+        if re.match("\+1|0|\+0|-0|-1",line):
             self.doCastVote(nick,line,time_)
     def doCastVote(self, nick, line, time_=None, private=False):
             """if a vote is underway and the nick is a registered voter
@@ -669,6 +700,7 @@ class Meeting(MeetingCommands, object):
                 if self.activeVote:
                     self.currentVote[nick]=line
                     if private is False:
+                        self.publicVoters[self.activeVote].append(nick)
                         self.reply(line + " received from " + nick)
 						
             #if the vote was in a private message - how do we do that??
