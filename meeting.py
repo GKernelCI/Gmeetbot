@@ -90,7 +90,7 @@ class Config(object):
                          "\n"
                          "Minutes:        %(urlBasename)s.moin.txt")
     endMeetingNotification = ("Meeting in %(channel)s has just ended")
-    endMeetingNotificationList = ["lderan"]
+    endMeetingNotificationList = ["jose"]
                          
     #TODO: endMeetingMessage should get filenames from the writers
 
