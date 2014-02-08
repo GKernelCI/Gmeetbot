@@ -1227,7 +1227,7 @@ class Moin(_BaseWriter):
                     Votes.insert(0, "   *  Voters " + publicVoters)
                 Votes.insert(0,"  * " + motion + " (For/Against/Abstained "+str(M.votes[m][0])+"/"+str(M.votes[m][2])+"/"+str(M.votes[m][1]) + ")")
                 # differentiate denied votes somehow, strikethrough perhaps?
-                Votes.insert(0," * [[%(fullLogsFullURL)s#"+str(M.votes[m][3])+" "+m+"]]"))
+                Votes.insert(0," * [[%(fullLogsFullURL)s#"+str(M.votes[m][3])+" "+m+"]]")
         Votes = "\n".join(Votes) 
         return Votes
 
