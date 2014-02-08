@@ -90,7 +90,7 @@ class Config(object):
                          "\n"
                          "Minutes:        %(urlBasename)s.moin.txt")
     endMeetingNotification = ("Meeting in %(channel)s has just ended")
-    endMeetingNotificationList = ["lderan"]
+    endMeetingNotificationList = ["jose"]
                          
     #TODO: endMeetingMessage should get filenames from the writers
 
@@ -397,7 +397,7 @@ class MeetingCommands(object):
         """Remove the last item from the minutes."""
         if not self.isChair(nick): return
         if len(self.minutes) == 0: return
-        self.reply("Removing item from minutes: %s"%str(self.minutes[-1]))
+        self.reply("Removing item from minutes: %s"%str(self.minutes[-1].itemtype))
         del self.minutes[-1]
     def do_restrictlogs(self, nick, **kwargs):
         """When saved, remove permissions from the files."""
