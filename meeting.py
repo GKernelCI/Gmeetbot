@@ -574,10 +574,10 @@ class MeetingCommands(object):
         commands = ["action", "info", "idea", "nick", "link", "commands"]
         commands.sort()
         self.reply("Available commands: "+(" ".join(commands)))
-    def do_done(self, nick, **kwargs):
+    def do_done(self, nick, line, **kwargs):
         """Add aggreement to the minutes - chairs only."""
         if not self.isChair(nick): return
-        m = items.Done(**kwargs)
+        m = items.Done(nick=nick, line=line, **kwargs)
         self.additem(m)
 
 
