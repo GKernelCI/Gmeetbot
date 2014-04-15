@@ -1213,7 +1213,6 @@ class Moin(_BaseWriter):
         M = self.M
         # Votes
         Votes = [ ]
-        Votes.append(self.heading('Vote results'))
         # reversed to show the oldest first
         if len(M.votes) > 0:
             for m in M.votes:
@@ -1227,7 +1226,9 @@ class Moin(_BaseWriter):
                     Votes.insert(0, "   *  Voters " + publicVoters)
                 Votes.insert(0,"  * " + motion + " (For/Against/Abstained "+str(M.votes[m][0])+"/"+str(M.votes[m][2])+"/"+str(M.votes[m][1]) + ")")
                 # differentiate denied votes somehow, strikethrough perhaps?
-                Votes.insert(0," * [[%(fullLogsFullURL)s#"+str(M.votes[m][3])+" "+m+"]]")
+                voteLink = "%(fullLogsFullURL)s"%self.replacements()
+                Votes.insert(0, " * [["+voteLink+"#"+str(M.votes[m][3])+" "+m+"]]")
+        Votes.insert(0, self.heading('Vote results'))
         Votes = "\n".join(Votes) 
         return Votes
 
@@ -1336,7 +1337,7 @@ class Moin(_BaseWriter):
         body = [ ]
         body.append(self.body_start%repl)
         body.append(self.meetingItems())
-        body.append(self.votes()%repl)
+        body.append(self.votes())
         body.append(self.actionItemsPerson())
         body.append(self.doneItems())
         body.append(self.peoplePresent())
