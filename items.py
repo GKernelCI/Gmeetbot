@@ -237,7 +237,7 @@ class Help(GenericItem):
     itemtype = 'HELP'
 class Done(GenericItem):
     itemtype = 'DONE'
-    moin_template = """''ACTION:'' %(line)s"""
+    moin_template = """''DONE:'' %(line)s"""
 class Accepted(GenericItem):
     itemtype = 'ACCEPTED'
     starthtml = '<font color="green">'
