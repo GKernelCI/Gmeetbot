@@ -1,6 +1,5 @@
-import os
-import re
-import sys
+import os, sys
+#import re
 import tempfile
 import unittest
 
@@ -16,8 +15,8 @@ def process_meeting(contents, extraConfig={}):
                                 dontSave=True, safeMode=False,
                                 extraConfig=extraConfig)
 
-class MeetBotTest(unittest.TestCase):
 
+class MeetBotTest(unittest.TestCase):
     def test_replay(self):
         """Replay of a meeting, using __meeting__.
         """
@@ -156,8 +155,7 @@ class MeetBotTest(unittest.TestCase):
     #        print m.groups()
 
     def t_css(self):
-        """Runs all CSS-related tests.
-        """
+        """Runs all CSS-related tests."""
         self.test_css_embed()
         self.test_css_noembed()
         self.test_css_file_embed()
@@ -256,4 +254,3 @@ if __name__ == '__main__':
                 MeetBotTest(methodName=testname).debug()
             else:
                 MeetBotTest(methodName='test_'+testname).debug()
-

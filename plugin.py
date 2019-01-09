@@ -28,21 +28,19 @@
 # POSSIBILITY OF SUCH DAMAGE.
 ###
 
-import supybot.utils as utils
 from supybot.commands import *
-import supybot.plugins as plugins
-import supybot.ircutils as ircutils
-import supybot.callbacks as callbacks
+import supybot.utils as utils
 import supybot.ircmsgs as ircmsgs
+import supybot.callbacks as callbacks
 
-import time
-import re
+import re, time
 from imp import reload
 from . import meeting
 from . import supybotconfig
+
 # Because of the way we override names, we need to reload these in order.
-meeting = reload(meeting)
-supybotconfig = reload(supybotconfig)
+reload(meeting)
+reload(supybotconfig)
 
 if supybotconfig.is_supybotconfig_enabled(meeting.Config):
     supybotconfig.setup_config(meeting.Config)
@@ -58,13 +56,13 @@ except NameError:  recent_meetings = [ ]
 
 
 class MeetBot(callbacks.Plugin):
-    """Add the help for "@plugin help MeetBot" here
+    """Add the help for "@plugin help MeetBot" here.
     This should describe *how* to use this plugin."""
 
     def __init__(self, irc):
         self.__parent = super(MeetBot, self)
         self.__parent.__init__(irc)
-                        
+
     # Instead of using real supybot commands, I just listen to ALL
     # messages coming in and respond to those beginning with our
     # prefix char.  I found this helpful from a not duplicating logic
@@ -88,13 +86,13 @@ class MeetBot(callbacks.Plugin):
         # Get our Meeting object, if one exists.  Have to keep track
         # of different servers/channels.
         # (channel, network) tuple is our lookup key.
-        Mkey = (channel,network)
+        Mkey = (channel, network)
         M = meeting_cache.get(Mkey, None)
 
         # Start meeting if we are requested
         if payload[:13].lower() == '#startmeeting':
-            if M is not None:
-                irc.error("Can't start another meeting, one is in progress.")
+            if M:
+                irc.error("Can't start another meeting, one is in progress")
                 return
             # This callback is used to send data to the channel:
             def _setTopic(x):
@@ -108,9 +106,9 @@ class MeetBot(callbacks.Plugin):
             M = meeting.Meeting(channel=channel, owner=nick,
                                 oldtopic=irc.state.channels[channel].topic,
                                 writeRawLog=True,
-                                setTopic = _setTopic, sendReply = _sendReply,
-                                sendPrivateReply = _sendPrivateReply,
-                                getRegistryValue = self.registryValue,
+                                setTopic=_setTopic, sendReply=_sendReply,
+                                sendPrivateReply=_sendPrivateReply,
+                                getRegistryValue=self.registryValue,
                                 safeMode=True, channelNicks=_channelNicks,
                                 network=network,
                                 )
@@ -120,8 +118,8 @@ class MeetBot(callbacks.Plugin):
             if len(recent_meetings) > 10:
                 del recent_meetings[0]
         if payload[:7].lower() =='#replay':
-            if M is not None:
-                irc.error("Can't replay logs while a meeting is in progress.")
+            if M:
+                irc.error("Can't replay logs while a meeting is in progress")
                 return
             M = meeting.replay_meeting(channel=channel)
             meeting_cache[Mkey] = M
@@ -129,55 +127,58 @@ class MeetBot(callbacks.Plugin):
                 (channel, network, time.ctime()))
             if len(recent_meetings) > 10:
                 del recent_meetings[0]
-				
+
         # If there is no meeting going on, then we quit
-        if M is None: return
+        if not M: return
         # Add line to our meeting buffer.
-        isop=(nick in irc.state.channels[channel].ops)
-        M.addline(nick, payload,isop)
+        isop = (nick in irc.state.channels[channel].ops)
+        M.addline(nick, payload, isop)
         # End meeting if requested:
         if M._meetingIsOver:
             #M.save()  # now do_endmeeting in M calls the save functions
             del meeting_cache[Mkey]
 
     def vote(self, irc, msg, args):
+        """<+1|-1|+0> <channel>
+
+        Vote by private message."""
         nick = msg.nick
         channel = msg.args[0]
         payload = msg.args[1]
         network = irc.msg.tags['receivedOn']
-        
-        """ sub string to remove 'vote ' from payload """
+
+        """ substring to remove 'vote ' from payload """
         payload = payload[5:]
-		
+
         """ private voting system """
-        if channel[:1] != '#' and re.match("\+1|0|\+0|-1",payload):
+        if channel[0] != '#' and re.match(r'([+-]1|[+-]?0)\b', payload):
             for key in list(meeting_cache.keys()):
                 if payload.endswith(key[0]):
                     voteMeeting = meeting_cache.get(key, None)
-                    if voteMeeting is not None:
+                    if voteMeeting:
                         time_ = time.localtime()
                         private = True
-                        voteMeeting.doCastVote(nick,payload,time_,private)
-                        irc.reply("received for vote '" + voteMeeting.activeVote + "'")
+                        voteMeeting.doCastVote(nick, payload, time_, private)
+                        irc.reply("Received for vote: " + voteMeeting.activeVote)
                     else:
                         irc.reply("No active meetings in this channel")
-			
+    vote = wrap(vote, ["something", "channel"])
+
     def outFilter(self, irc, msg):
-        """Log outgoing messages from supybot.
-        """
+        """Log outgoing messages from supybot."""
         # Catch supybot's own outgoing messages to log them.  Run the
         # whole thing in a try: block to prevent all output from
         # getting clobbered.
         try:
-            if msg.command in ('PRIVMSG'):
+            if msg.command in ('PRIVMSG',):
                 # Note that we have to get our nick and network parameters
                 # in a slightly different way here, compared to doPrivmsg.
                 nick = irc.nick
                 channel = msg.args[0]
                 payload = msg.args[1]
-                Mkey = (channel,irc.network)
+                Mkey = (channel, irc.network)
                 M = meeting_cache.get(Mkey, None)
-                if M is not None:
+                if M:
                     M.addrawline(nick, payload)
         except:
             import traceback
@@ -191,14 +192,14 @@ class MeetBot(callbacks.Plugin):
     def listmeetings(self, irc, msg, args):
         """
 
-        List all currently-active meetings."""
-        reply = ""
-        reply = ", ".join(str(x) for x in sorted(meeting_cache.keys()) )
-        if reply.strip() == '':
-            irc.reply("No currently active meetings.")
+        List all currently active meetings."""
+        reply = ", ".join([str(x) for x in sorted(meeting_cache.keys())])
+        if not reply:
+            irc.reply("No currently active meetings")
         else:
             irc.reply(reply)
     listmeetings = wrap(listmeetings, ['admin'])
+
     def savemeetings(self, irc, msg, args):
         """
 
@@ -206,40 +207,42 @@ class MeetBot(callbacks.Plugin):
         numSaved = 0
         for M in list(meeting_cache.items()):
             M.config.save()
-        irc.reply("Saved %d meetings."%numSaved)
+        irc.reply("Saved %d meetings" % numSaved)
     savemeetings = wrap(savemeetings, ['admin'])
+
     def addchair(self, irc, msg, args, channel, network, nick):
         """<channel> <network> <nick>
 
         Add a nick as a chair to the meeting."""
-        Mkey = (channel,network)
+        Mkey = (channel, network)
         M = meeting_cache.get(Mkey, None)
         if not M:
-            irc.reply("Meeting on channel %s, network %s not found"%(
+            irc.reply("Meeting on channel %s, network %s not found" % (
                 channel, network))
             return
         M.chairs.setdefault(nick, True)
-        irc.reply("Chair added: %s on (%s, %s)."%(nick, channel, network))
+        irc.reply("Chair added: %s on (%s, %s)" % (nick, channel, network))
     addchair = wrap(addchair, ['admin', "channel", "something", "nick"])
+
     def deletemeeting(self, irc, msg, args, channel, network, save):
         """<channel> <network> <saveit=True>
 
         Delete a meeting from the cache.  If save is given, save the
         meeting first, defaults to saving."""
-        Mkey = (channel,network)
+        Mkey = (channel, network)
         if Mkey not in meeting_cache:
-            irc.reply("Meeting on channel %s, network %s not found"%(
+            irc.reply("Meeting on channel %s, network %s not found" % (
                 channel, network))
             return
         if save:
             M = meeting_cache.get(Mkey, None)
-            import time
             M.endtime = time.localtime()
             M.config.save()
         del meeting_cache[Mkey]
-        irc.reply("Deleted: meeting on (%s, %s)."%(channel, network))
+        irc.reply("Deleted: meeting on (%s, %s)" % (channel, network))
     deletemeeting = wrap(deletemeeting, ['admin', "channel", "something",
                                optional("boolean", True)])
+
     def recent(self, irc, msg, args):
         """
 
@@ -247,14 +250,14 @@ class MeetBot(callbacks.Plugin):
         """
         reply = []
         for channel, network, ctime in recent_meetings:
-            Mkey = (channel,network)
+            Mkey = (channel, network)
             if Mkey in meeting_cache:   state = ", running"
             else:                       state = ""
-            reply.append("(%s, %s, %s%s)"%(channel, network, ctime, state))
+            reply.append("(%s, %s, %s%s)" % (channel, network, ctime, state))
         if reply:
             irc.reply(" ".join(reply))
         else:
-            irc.reply("No recent meetings in internal state.")
+            irc.reply("No recent meetings in internal state")
     recent = wrap(recent, ['admin'])
 
     def pingall(self, irc, msg, args, message):
@@ -262,7 +265,7 @@ class MeetBot(callbacks.Plugin):
 
         Send a broadcast ping to all users on the channel.
 
-        An message to be sent along with this ping must also be
+        A message to be sent along with this ping must also be
         supplied for this command to work.
         """
         nick = msg.nick
@@ -272,10 +275,11 @@ class MeetBot(callbacks.Plugin):
         # We require a message to go out with the ping, we don't want
         # to waste people's time:
         if channel[0] != '#':
-            irc.reply("Not joined to any channel.")
+            irc.reply("Not joined to any channel")
             return
-        if message is None:
-            irc.reply("You must supply a description with the `pingall` command.  We don't want to go wasting people's times looking for why they are pinged.")
+        if not message:
+            irc.reply(("You must supply a description with the `pingall` command.  "
+                "We don't want to go wasting people's times looking for why they are pinged."))
             return
 
         # Send announcement message
@@ -285,14 +289,13 @@ class MeetBot(callbacks.Plugin):
         nicks = sorted(irc.state.channels[channel].users,
                        key=lambda x: x.lower())
         for nick in nicks:
-            nickline = nickline + nick + ' '
+            nickline += nick + ' '
             if len(nickline) > 256:
                 irc.sendMsg(ircmsgs.privmsg(channel, nickline))
                 nickline = ''
         irc.sendMsg(ircmsgs.privmsg(channel, nickline))
         # Send announcement message
         irc.sendMsg(ircmsgs.privmsg(channel, message))
-
     pingall = wrap(pingall, [optional('text', None)])
 
     def __getattr__(self, name):
@@ -322,9 +325,7 @@ class MeetBot(callbacks.Plugin):
 
             #from fitz import interactnow ; reload(interactnow)
 
-            #print type(payload)
-            payload = "#%s %s"%(name,message)
-            #print payload
+            payload = "#%s %s" % (name, message)
             import copy
             msg = copy.copy(msg)
             msg.args = (channel, payload)

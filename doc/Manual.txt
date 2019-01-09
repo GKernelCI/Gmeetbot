@@ -1,17 +1,13 @@
 ====================================================
-MeetBot, a supybot plugin for IRC meeting notetaking
+MeetBot, a Supybot plugin for IRC meeting notetaking
 ====================================================
 
-
-
-MeetBot is a plugin to the IRC bot supybot to facilitate taking of
+MeetBot is a plugin to the IRC bot Supybot to facilitate taking of
 notes during IRC meetings.  This allows you to better communicate with
 your project or groups after the IRC meeting, as well as keep the
-meeting more under control and on-topic.
+meeting more under control and on topic.
 
 .. contents::
-
-
 
 
 Tutorial
@@ -106,8 +102,6 @@ can look at the `logs`_ and `minutes`_ online.
 .. _minutes: http://rkd
 
 
-
-
 User reference
 ==============
 
@@ -115,7 +109,7 @@ Commands
 --------
 
 All commands are case-insensitive, and use the ``#`` prefix
-character.   Not all commands have output.  This might be confusing,
+character.  Not all commands have output.  This might be confusing,
 because you don't know if it's been acted on or not.  However, this is
 a conscious design decision to try to keep out of the way and not
 distract from the real people.  If something goes wrong, you can
@@ -143,8 +137,8 @@ adjust and have MeetBot re-process the logs later.
   Add new chairs to the meeting.  The rest of the line is a list of
   nicks, separated by commas and/or spaces.  The nick which started
   the meeting is the ``owner`` and can't be de-chaired.  The command
-  replies with a list of the current chairs, for verification (Chairs
-  only.)  Example::
+  replies with a list of the current chairs, for verification.
+  (Chairs only.)  Example::
 
     < MrBeige> #chair MrGreen MsAlizarin
     < MeetBot> Current chairs are: MsAlizarin MrBeige MrGreen
@@ -186,9 +180,7 @@ adjust and have MeetBot re-process the logs later.
     < MrBeige> the main page is http://wiki.debian.org/MeetBot/
 
 
-
-
-Less-used commands
+Less used commands
 ------------------
 
 #meetingtopic
@@ -197,14 +189,14 @@ Less-used commands
   is "<topic> (Meeting Topic: <meeting topic>)".  (Chairs only.)
 
 #commands
-  List recognized supybot commands.  This is the actual "help" command.
+  List recognized Supybot commands.  This is the actual "help" command.
 
 #idea
   Add an ``IDEA`` to the minutes.
 
 #help (alias #halp)
   Add a ``HELP`` item to the minutes.  Confusingly, this does *not* give
-  supybot help.  See #commands.
+  Supybot help.  See #commands.
 
 #accepted (alias #accept)
   Mark something as accepted.  The rest of the line is the details.
@@ -218,7 +210,7 @@ Less-used commands
   Write out the logs right now.  (Chairs only.)
 
 #nick
-  Make a nick be recognized by supybot, even though it hasn't said
+  Make a nick be recognized by Supybot, even though it hasn't said
   anything.  This is only useful in order to make a list of action
   items be grouped by this nick at the end of the meeting.
 
@@ -232,7 +224,7 @@ Less-used commands
 
 #lurk and #unlurk
   When ``lurk`` is set, MeetBot will only passively listen and take
-  notes (and save the notes), not reply or change the topic  This is
+  notes (and save the notes), not reply or change the topic.  This is
   useful for when you don't want disruptions during the meeting.
   (Chairs only.)
 
@@ -246,8 +238,6 @@ Less-used commands
   All spaces are removed from the rest of the line and the string is
   converted to lowercase.  If ``meetingname`` is not provided, it
   defaults to ``channel``.  (Chairs only.)
-
-
 
 
 Hints on how to run an effective meeting
@@ -276,8 +266,6 @@ Hints on how to run an effective meeting
   manage all people who are going off-topic, can help.
 
 
-
-
 Administrators
 ==============
 
@@ -288,11 +276,11 @@ Unfortunately, MeetBot seems a bit complex to configure.  In order to
 keep things straight, keep this in mind: MeetBot has two distinct
 pieces.  The first (``meeting.py`` and friends) is the meeting parser
 and note/logfile generator.  This part can run independently,
-*without* the supybot plugin.  The second part interfaces the core
-``meeting.py`` to supybot, to make it usable via IRC.
+*without* the Supybot plugin.  The second part interfaces the core
+``meeting.py`` to Supybot, to make it usable via IRC.
 
 When reading about how to run MeetBot, keep this in mind, and if
-something is applicable to ``meeting.py`` features, just supybot
+something is applicable to ``meeting.py`` features, just Supybot
 features, or both.
 
 This design split greatly increases modularity (a "good thing"), and
@@ -300,13 +288,11 @@ also allows the Replay functionality.  It should also allow other bot
 plugins to easily be written.
 
 
-
-
 Replay functionality
 --------------------
 
 Let's say you had a meeting which happened a while ago, and you would
-like to update the logs to a newer format.  If supybot was the only
+like to update the logs to a newer format.  If Supybot was the only
 way to use MeetBot, you'd be out of luck.  Luckily, there is an
 independent way to replay meetings::
 
@@ -326,15 +312,13 @@ was incorrect during the meeting.  As such, this is an important
 feature of MeetBot.
 
 However, this does make configuration changes harder.  Since the
-replay function works *independent* of supybot, any configuration that
-is done in supybot will be invisible to the replay function.  Thus, we
-have to have a non-supybot mechanism of configuring MeetBot.  There
-was a supybot way of configuring MeetBot added later, which can adjust
+replay function works *independent* of Supybot, any configuration that
+is done in Supybot will be invisible to the replay function.  Thus, we
+have to have a non-Supybot mechanism of configuring MeetBot.  There
+was a Supybot way of configuring MeetBot added later, which can adjust
 most variables.  However, if something is configured here, it won't be
 seen if a file is replayed.  This might be OK, or it might not be,
 depending on the variable.
-
-
 
 
 Configuration
@@ -343,8 +327,8 @@ Configuration
 meetingLocalConfig.py configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This is the non-supybot method of configuration, and allows the most
-flexibility.  **It works for configuring supybot, too**, but requires
+This is the non-Supybot method of configuration, and allows the most
+flexibility.  **It works for configuring Supybot, too**, but requires
 shell access and a MeetBot reload to change.
 
 Configuration is done by creating a file ``meetingLocalConfig.py`` in
@@ -353,7 +337,7 @@ the plugin directory, or somewhere in your PYTHONPATH.  It works by
 
 Here is a minimal usage example.  You need at *least* this much to
 make it run. Put this in ``meetingLocalConfig.py`` before you first
-start supybot::
+start Supybot::
 
     class Config(object):
         # These two are **required**:
@@ -375,18 +359,17 @@ like add a new meeting command, meeting agenda item type, or more.
 Some of these ideas are documented under the "Advanced configuration"
 section below.
 
-To reload a configuration in a running supybot, you can just reload
-the plugin in supybot --- the module is reloaded.  Specifically,
+To reload a configuration in a running Supybot, you can just reload
+the plugin in Supybot --- the module is reloaded.  Specifically,
 ``/msg YourBotName reload MeetBot``.
 
 
+Supybot-based configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Supybot-based config
-~~~~~~~~~~~~~~~~~~~~
-
-This is the system that configures MeetBot based on the supybot
+This is the system that configures MeetBot based on the Supybot
 registry system.  Thus, it can be adjusted by anyone with the proper
-supybot capabilities.  However, the configuration in the supybot
+Supybot capabilities.  However, the configuration in the Supybot
 registry *won't* be used if the ``replay`` functionality is used (see
 above).  Thus, for example, if you configure the MediaWiki writer
 using ``supybot.plugins.MeetBot.writer_map``, and then ``replay`` the
@@ -416,24 +399,22 @@ Setting a value for a variable::
 Most variables (those with # prepended) can be set on a per-channel
 basis (they are set up as channel-specific variables).
 
-
-At present, not all variables are exported to supybot.  All string and
+At present, not all variables are exported to Supybot.  All string and
 boolean variables are, as well certain other variables for which a
 wrapper has been written (``writer_map`` in particular).  If a
-variable doesn't appear in the supybot registry, it can't be set via
+variable doesn't appear in the Supybot registry, it can't be set via
 the registry.
 
-If you want to disable supybot-based config for security reasons, set
+If you want to disable Supybot-based configuration for security reasons, set
 ``dontBotConfig`` to True in your custom configuration class in
 ``meetingLocalConfig.py``.
-
 
 
 Required or important configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These variables are set either in ``meetingLocalConfig.py`` (in the
-``Config`` class) or in the supybot registry.
+``Config`` class) or in the Supybot registry.
 
 ``logFileDir``
     The filesystem directory in which the meeting outputs are stored,
@@ -442,7 +423,7 @@ These variables are set either in ``meetingLocalConfig.py`` (in the
 ``logUrlPrefix``
     The URL corresponding to ``logFileDir``.  This is prepended to
     filenames when giving end-of-meeting links in the channel.
-    **Required** or supybot's URLs will be missing.
+    **Required** or Supybot's URLs will be missing.
 
 ``filenamePattern``
     This defaults to ``'%(channel)s/%%Y/%(channel)s.%%F-%%H.%%M'``,
@@ -453,7 +434,7 @@ These variables are set either in ``meetingLocalConfig.py`` (in the
 
     Variables available for replacement using ``%(name)s`` include:
     ``channel``, ``network``, ``meetingname``.  Double percent signs
-    (e.g.: ``%%Y`` are time formats, from ``time.strftime``.
+    (e.g. ``%%Y``) are time formats, from ``time.strftime``.
 
     You should *not* include filename extensions here.  Those are
     found from the writers, via the variable ``writer_map``.
@@ -482,8 +463,7 @@ along with extensions to use.  For example, in
 ``meetingLocalConfig.py``::
 
     import writers
-
-    class Config:
+    class Config(object):
         writer_map = {
             '.log.html':writers.HTMLlog,
             '.html': writers.HTML,
@@ -492,7 +472,7 @@ along with extensions to use.  For example, in
             }
 
 
-This *can* be configured through supybot.  To do this, set
+This *can* be configured through Supybot.  To do this, set
 ``supybot.plugins.MeetBot.writer_map`` to a space-separated list of
 ``WriterName:.extension`` pairs (note the different ordering from the
 python dictionary).  For example, to list the current setting (in
@@ -506,8 +486,6 @@ And to set it (again, in private message with the bot)::
     <MrBeige> config plugins.MeetBot.writer_map HTML2:.html MediaWiki:.mw HTMLlog2:.log.html Text:.txt
 
 
-
-
 The available writers are (with default extensions, if enabled by
 default):
 
@@ -515,7 +493,7 @@ default):
     Plain-text logs suitable for replaying.  This does **not** have to
     be explicitly enabled listed-- it is automatically enabled
     whenever it is needed (currently, only when a meeting comes
-    realtime from supybot, not when being replayed)
+    realtime from Supybot, not when being replayed).
 
 ``HTMLlog`` (``.log.html``)
     Alias for the current default HTML-pretty logs output format,
@@ -534,7 +512,7 @@ default):
     Configurable via CSS (see section below).
 
 ``Text`` (``.txt``)
-    A meeting notes format, as a plain text file
+    A meeting notes format, as a plain text file.
 
 ``MediaWiki``
     MediaWiki output.  This doesn't upload *to* a MediaWiki instance,
@@ -568,12 +546,11 @@ Obsolete writers are:
     Python to be installed.
 
 
-
-Other config variables
-~~~~~~~~~~~~~~~~~~~~~~
+Other configuration variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These variables are set either in ``meetingLocalConfig.py`` (in the
-``Config`` class) or in the supybot registry.
+``Config`` class) or in the Supybot registry.
 
 ``RestrictPerm``
     An int listing which permissions to remove when using the
@@ -606,10 +583,10 @@ These variables are set either in ``meetingLocalConfig.py`` (in the
 
 ``timeZone``
     Timezone used in the bot.  Note: This will not yet work on a
-    per-channel basis.  The default is ``"UTC"``
+    per-channel basis.  The default is ``"UTC"``.
 
 ``update_realtime``
-    If this is set to true (default false), then upon each line being
+    If this is set to true (default: false), then upon each line being
     input, the ``Text`` writer will rewrite the data.  This means that
     people joining the meeting late can catch up on what they have
     missed.  It doesn't play will with the #meetingname command, since
@@ -654,7 +631,6 @@ These variables are set either in ``meetingLocalConfig.py`` (in the
     then a stylesheet link is written.
 
 
-
 Advanced configuration
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -671,6 +647,7 @@ You can make a per-channel config::
             else:
                 self.logFileDir = '/some/other/directory'
 
+
 Make a per-channel writer_map (note that you shouldn't change
 writer_map in place)::
 
@@ -684,7 +661,7 @@ writer_map in place)::
 
 The display styles (in html writers) can be modified also, by using
 the starthtml and endhtml attributes (put this in
-meetingLocalConfig.py::
+meetingLocalConfig.py)::
 
     import items
     items.Agreed.starthtml = '<font color="red">'
@@ -693,26 +670,24 @@ meetingLocalConfig.py::
 
 Adding a new custom command via ``meetingLocalConfig.py``.  (This
 likely won't make sense unless you examine the code a bit and know
-esoteric things about python method types)::
+esoteric things about Python method types.)::
 
     import types
     class Config(object):
         def init(self):
             def do_party(self, nick, time_, **kwargs):
                 self.reply("We're having a party in this code!")
-                self.reply(("Owner, Chairs: %s %s"%(
-                                     self.owner,sorted(self.chairs.keys()))))
+                self.reply("Owner, Chairs: %s %s" % (
+                                    self.owner, sorted(self.chairs.keys())))
             self.M.do_party = types.MethodType(
-                                           do_party, self.M, self.M.__class__)
+                                        do_party, self.M, self.M.__class__)
 
 
 Make a command alias.  Make ``#weagree`` an alias for ``#agreed``::
 
     class Config(object):
         def init(self):
-	    self.M.do_weagree = self.M.do_agreed
-
-
+            self.M.do_weagree = self.M.do_agreed
 
 
 Supybot admin commands
@@ -724,14 +699,14 @@ many channels as a public service, and the bot owner sometimes needs
 to be able to monitor and adjust the overall situation, even if she is
 not the chair of a meeting.
 
-All of these are regular supybot commands (as opposed to the commands
-above).  That means that the supybot capability system applies, and
+All of these are regular Supybot commands (as opposed to the commands
+above).  That means that the Supybot capability system applies, and
 they can be given either in any channel, either by direct address
 (``BotName: <command> <args> ...``) or with the bot prefix character
 (e.g. ``@<commandname> <args> ...``).  If there are commands with the
 same name in multiple plugins, you need to prefix the command with the
 plugin name (for example, ``BotName: meetbot recent`` instead of
-``BotName: recent``)
+``BotName: recent``).
 
 These are restricted to anyone with the ``admin`` capability on the
 bot.
@@ -758,16 +733,14 @@ bot.
   just who all is using your bot, for example to better communicate
   with those channels.
 
-To connect to multiple IRC networks, use the supybot ``Network``
+To connect to multiple IRC networks, use the Supybot ``Network``
 plugin to manage them.  First, load the ``Network`` plugin, then use
 the ``connect`` command to connect to the other network.  Finally, you
-need to tell supybot to join channels on the new.  To do
+need to tell Supybot to join channels on the new.  To do
 that, you can use ``network command <other_network> join <channel>``.
 (Alternatively, you can /msg the bot through the other network, but
 you'll have to register your nick to it on the other network in order
 for it to accept commands from you.)
-
-
 
 
 Developers
@@ -779,11 +752,12 @@ To speak with other developers and users, please join ``#meetbot`` on
 Code contributions to MeetBot are encouraged, but you probably want to
 check with others in #meetbot first to discuss general plans.
 
+
 Architecture
 ------------
 
-MeetBot is primarily used as a supybot plugin, however, it is designed
-to not be limited to use with supybot.  Thus, there are some design
+MeetBot is primarily used as a Supybot plugin, however, it is designed
+to not be limited to use with Supybot.  Thus, there are some design
 choices which are slightly more complicated.
 
 ``meeting.py`` contains the core of the MeetBot code.  Most meeting
@@ -794,7 +768,7 @@ functionality modifications would begin here.
 * The ``Config`` class stores all of the local configuration
   information.  An implicit subclass of this done for local
   configuration.  A proxy is set up for the ``Config`` class to engage
-  in the supybot-based configuration (``supybotconfig.py``).
+  in the Supybot-based configuration (``supybotconfig.py``).
 
 ``items.py`` contains MeetingItem objects of different classes.  These
 hold data about different #commands, most importantly their formatting
@@ -802,13 +776,13 @@ information.
 
 ``writers.py`` contains the code to write the output files.  It
 depends on the objects in ``items.py`` to be able to format
-themselves, and the various classes in here
+themselves, and the various classes in here.
 
 ``plugin.py``, ``config.py``, ``test.py``, ``__init__.py`` are all
-supybot based files.  (yes, the supybot/not-supybot split is not as
-rigorous as it should be).  All of the supybot commands to interact
+Supybot-based files.  (Yes, the Supybot/not-Supybot split is not as
+rigorous as it should be.)  All of the Supybot commands to interact
 with the meeting and send lines to the ``Meeting`` object are in
-``plugin.py``.  If you want to add a *supybot*-based feature, this
+``plugin.py``.  If you want to add a *Supybot*-based feature, this
 would be the place to start.
 
 
@@ -826,7 +800,7 @@ After that, to get code updates, use the **pull** command::
     darcs get http://darcs.debian.org/darcs/collab-maint/MeetBot/  # stable
 
 Darcs truly supports "cherry-picking": you can pull patches from
-either branch at will (They will be kept synchronized enough so that
+either branch at will (they will be kept synchronized enough so that
 this works).  You may skip any patches you do not desire, and pull any
 later patches as long as you have all earlier dependencies.
 
@@ -857,7 +831,6 @@ if you would like to find out more.
 The darcs **push** command is the counterpart to ``pull``, and used
 to move changes around when you have direct write access to the remote
 repository.
-
 
 
 Help and support

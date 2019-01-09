@@ -28,10 +28,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 ###
 
+import os, sys
 from supybot.test import *
-
-import os
-import sys
 
 class MeetBotTestCase(ChannelPluginTestCase):
     channel = "#testchannel"

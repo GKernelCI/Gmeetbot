@@ -28,12 +28,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 ###
 
-import os
 import time
-
 from . import writers
-#from writers import html, rst
-import itertools
 
 def inbase(i, chars='abcdefghijklmnopqrstuvwxyz', place=0):
     """Converts an integer into a postfix in base 26 using ascii chars.
@@ -48,8 +44,6 @@ def inbase(i, chars='abcdefghijklmnopqrstuvwxyz', place=0):
         return chars[mod]
     else:
         return inbase2(div, chars=chars, place=place+1)+chars[mod]
-
-
 
 #
 # These are objects which we can add to the meeting minutes.  Mainly
@@ -80,12 +74,11 @@ class _BaseItem(object):
             replacements['topic'] = escapewith(replacements['topic'])
         if 'url' in replacements:
             replacements['url_quoteescaped'] = \
-                                      escapewith(self.url.replace('"', "%22"))
-
+                                    escapewith(self.url.replace('"', "%22"))
         return replacements
     def template(self, M, escapewith):
         template = { }
-        for k,v in list(self.get_replacements(M, escapewith).items()):
+        for k, v in list(self.get_replacements(M, escapewith).items()):
             if k not in ('itemtype', 'line', 'topic',
                          'url', 'url_quoteescaped',
                          'nick', 'time', 'link', 'anchor'):
@@ -107,27 +100,26 @@ class _BaseItem(object):
         return rstref
     @property
     def anchor(self):
-        return 'l-'+str(self.linenum)
+        return 'l-%d' % self.linenum
     def logURL(self, M):
         return M.config.basename+'.log.html'
+
 
 class Topic(_BaseItem):
     itemtype = 'TOPIC'
     html_template = """<tr><td><a href='%(link)s#%(anchor)s'>%(time)s</a></td>
         <th colspan=3>%(starthtml)sTopic: %(topic)s%(endhtml)s</th>
         </tr>"""
-    #html2_template = ("""<b>%(starthtml)s%(topic)s%(endhtml)s</b> """
-    #                  """(%(nick)s, <a href='%(link)s#%(anchor)s'>%(time)s</a>)""")
     html2_template = ("""%(starthtml)s%(topic)s%(endhtml)s """
                       """<span class="details">"""
-                      """(<a href='%(link)s#%(anchor)s'>%(nick)s</a>, """
-                      """%(time)s)"""
+                      """(%(nick)s, """
+                      """<a href='%(link)s#%(anchor)s'>%(time)s</a>)"""
                       """</span>""")
     rst_template = """%(startrst)s%(topic)s%(endrst)s  (%(rstref)s_)"""
     text_template = """%(starttext)s%(topic)s%(endtext)s  (%(nick)s, %(time)s)"""
     mw_template = """%(startmw)s%(topic)s%(endmw)s  (%(nick)s, %(time)s)"""
-    moin_template = """%(startmoin)s%(topic)s%(endmoin)s  (%(nick)s, %(time)s)"""
-    moin_template = """=== %(topic)s ===\nThe discussion about \"%(topic)s\" started at %(time)s.\n"""
+    moin_template = ("""%(startmoin)s%(topic)s%(endmoin)s\n\n"""
+                     """Discussion started by %(nick)s at %(time)s.\n""")
 
     startrst = '**'
     endrst = '**'
@@ -135,10 +127,10 @@ class Topic(_BaseItem):
     endmw = "'''"
     starthtml = '<b class="TOPIC">'
     endhtml = '</b>'
-    startmoin = ''
-    endmoin = ''
+    startmoin = '=== '
+    endmoin = ' ==='
     def __init__(self, nick, line, linenum, time_):
-        self.nick = nick ; self.topic = line ; self.linenum = linenum
+        self.nick = nick; self.topic = line; self.linenum = linenum
         self.time = time.strftime("%H:%M", time_)
     def _htmlrepl(self, M):
         repl = self.get_replacements(M, escapewith=writers.html)
@@ -151,7 +143,7 @@ class Topic(_BaseItem):
     def rst(self, M):
         self.rstref = self.makeRSTref(M)
         repl = self.get_replacements(M, escapewith=writers.rst)
-        if repl['topic']=='': repl['topic']=' '
+        if repl['topic'] == '': repl['topic'] = ' '
         repl['link'] = self.logURL(M)
         return self.rst_template%repl
     def text(self, M):
@@ -164,6 +156,16 @@ class Topic(_BaseItem):
     def moin(self, M):
         repl = self.get_replacements(M, escapewith=writers.moin)
         return self.moin_template%repl
+
+
+class Subtopic(Topic):
+    itemtype = 'SUBTOPIC'
+    moin_template = """%(startmoin)s%(line)s%(endmoin)s  (%(nick)s, %(time)s)"""
+    starthtml = '<b class="SUBTOPIC">'
+    endhtml = '</b>'
+    startmoin = "'''"
+    endmoin = "'''"
+
 
 class GenericItem(_BaseItem):
     itemtype = ''
@@ -176,15 +178,15 @@ class GenericItem(_BaseItem):
                       """<span class="%(itemtype)s">"""
                       """%(starthtml)s%(line)s%(endhtml)s</span> """
                       """<span class="details">"""
-                      """(<a href='%(link)s#%(anchor)s'>%(nick)s</a>, """
-                      """%(time)s)"""
+                      """(%(nick)s, """
+                      """<a href='%(link)s#%(anchor)s'>%(time)s</a>)"""
                       """</span>""")
     rst_template = """*%(itemtype)s*: %(startrst)s%(line)s%(endrst)s  (%(rstref)s_)"""
     text_template = """%(itemtype)s: %(starttext)s%(line)s%(endtext)s  (%(nick)s, %(time)s)"""
     mw_template = """''%(itemtype)s:'' %(startmw)s%(line)s%(endmw)s  (%(nick)s, %(time)s)"""
-    moin_template = """''%(itemtype)s:'' %(startmw)s%(line)s%(endmw)s  (%(nick)s, %(time)s)"""
+    moin_template = """''%(itemtype)s:'' %(startmoin)s%(line)s%(endmoin)s  (%(nick)s, %(time)s)"""
     def __init__(self, nick, line, linenum, time_):
-        self.nick = nick ; self.line = line ; self.linenum = linenum
+        self.nick = nick; self.line = line; self.linenum = linenum
         self.time = time.strftime("%H:%M", time_)
     def _htmlrepl(self, M):
         repl = self.get_replacements(M, escapewith=writers.html)
@@ -210,33 +212,31 @@ class GenericItem(_BaseItem):
         repl = self.get_replacements(M, escapewith=writers.moin)
         return self.moin_template%repl
 
+
 class Info(GenericItem):
     itemtype = 'INFO'
     html2_template = ("""<span class="%(itemtype)s">"""
                       """%(starthtml)s%(line)s%(endhtml)s</span> """
                       """<span class="details">"""
-                      """(<a href='%(link)s#%(anchor)s'>%(nick)s</a>, """
-                      """%(time)s)"""
+                      """(%(nick)s, """
+                      """<a href='%(link)s#%(anchor)s'>%(time)s</a>)"""
                       """</span>""")
     rst_template = """%(startrst)s%(line)s%(endrst)s  (%(rstref)s_)"""
     text_template = """%(starttext)s%(line)s%(endtext)s  (%(nick)s, %(time)s)"""
     mw_template = """%(startmw)s%(line)s%(endmw)s  (%(nick)s, %(time)s)"""
-    moin_template = """%(startmoin)s%(line)s%(endmoin)s"""
+    moin_template = """%(startmoin)s%(line)s%(endmoin)s  (%(nick)s, %(time)s)"""
 class Idea(GenericItem):
     itemtype = 'IDEA'
 class Agreed(GenericItem):
     itemtype = 'AGREED'
 class Action(GenericItem):
     itemtype = 'ACTION'
-    moin_template = """''ACTION:'' %(line)s"""
-class Subtopic(GenericItem):
-    itemtype = 'SUBTOPIC'
-    moin_template = """ * '''%(line)s''' (%(time)s)"""
 class Help(GenericItem):
     itemtype = 'HELP'
 class Done(GenericItem):
     itemtype = 'DONE'
-    moin_template = """''DONE:'' %(line)s"""
+class Vote(GenericItem):
+    itemtype = 'VOTE'
 class Accepted(GenericItem):
     itemtype = 'ACCEPTED'
     starthtml = '<font color="green">'
@@ -245,6 +245,8 @@ class Rejected(GenericItem):
     itemtype = 'REJECTED'
     starthtml = '<font color="red">'
     endhtml = '</font>'
+
+
 class Link(_BaseItem):
     itemtype = 'LINK'
     html_template = """<tr><td><a href='%(link)s#%(anchor)s'>%(time)s</a></td>
@@ -256,21 +258,20 @@ class Link(_BaseItem):
     #                  """(<a href='%(link)s#%(anchor)s'>%(nick)s</a>, %(time)s)""")
     html2_template = ("""%(starthtml)s<a href="%(url)s">%(url_readable)s</a> %(line)s%(endhtml)s """
                       """<span class="details">"""
-                      """(<a href='%(link)s#%(anchor)s'>%(nick)s</a>, """
-                      """%(time)s)"""
+                      """(%(nick)s, """
+                      """<a href='%(link)s#%(anchor)s'>%(time)s</a>)"""
                       """</span>""")
     rst_template = """*%(itemtype)s*: %(startrst)s%(url)s %(line)s%(endrst)s  (%(rstref)s_)"""
     text_template = """%(itemtype)s: %(starttext)s%(url)s %(line)s%(endtext)s  (%(nick)s, %(time)s)"""
     mw_template = """''%(itemtype)s:'' %(startmw)s%(url)s %(line)s%(endmw)s  (%(nick)s, %(time)s)"""
-    moin_template = """''%(itemtype)s:'' %(startmw)s%(url)s %(line)s%(endmw)s"""
+    moin_template = """''%(itemtype)s:'' %(startmoin)s%(url)s %(line)s%(endmoin)s  (%(nick)s, %(time)s)"""
     def __init__(self, nick, line, linenum, time_):
-        self.nick = nick ; self.linenum = linenum
-        self.time = time.strftime("%H:%M:%S", time_)
+        self.nick = nick; self.linenum = linenum
+        self.time = time.strftime("%H:%M", time_)
         self.url, self.line = (line+' ').split(' ', 1)
-        # URL-sanitization
+        # URL sanitization
         self.url_readable = self.url # readable line version
-        self.url = self.url
-        self.line = self.line.strip()
+        self.line = self.line.rstrip()
     def _htmlrepl(self, M):
         repl = self.get_replacements(M, escapewith=writers.html)
         # special: replace doublequote only for the URL.

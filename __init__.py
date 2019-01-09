@@ -39,7 +39,7 @@ from imp import reload
 
 # Use this for the version of this plugin.  You may wish to put a CVS keyword
 # in here if you're keeping the plugin in CVS or some similar system.
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 # XXX Replace this with an appropriate author or supybot.Author instance.
 __author__ = supybot.Author('Krytarik Raido', 'krytarik', 'krytarik@tuxgarage.com')
@@ -54,6 +54,7 @@ __contributors__ = {
 __url__ = 'https://launchpad.net/ubuntu-bots'
 
 from . import config
+reload(config)
 from . import plugin
 reload(plugin) # In case we're being reloaded.
 # Add more reloads here if you add third-party modules and want them to be

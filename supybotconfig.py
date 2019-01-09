@@ -28,15 +28,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 ###
 
-
-import types
-import sys
-
+import sys, types
 import supybot.conf as conf
 import supybot.registry as registry
-
-from . import meeting
-from . import writers
 
 # The plugin group for configuration
 MeetBotConfigGroup = conf.registerPlugin('MeetBot')
@@ -78,7 +72,7 @@ class SupybotConfigProxy(object):
         """Do the regular default configuration, and sta"""
         OriginalConfig = self.__OriginalConfig
         self.__C = OriginalConfig(*args, **kwargs)
-    
+
     def __getattr__(self, attrname):
         """Try to get the value from the supybot registry.  If it's in
         the registry, return it.  If it's not, then proxy it to th.
@@ -109,14 +103,13 @@ class SupybotConfigProxy(object):
         return value
 
 
-
-#conf.registerGlobalValue(MeetBot
 use_supybot_config = conf.registerGlobalValue(MeetBotConfigGroup,
                                               'enableSupybotBasedConfig',
                                               registry.Boolean(False, ''))
 def is_supybotconfig_enabled(OriginalConfig):
     return (use_supybot_config.value and
             not getattr(OriginalConfig, 'dontBotConfig', False))
+
 
 settable_attributes = [ ]
 def setup_config(OriginalConfig):
@@ -150,9 +143,8 @@ def setup_config(OriginalConfig):
                       WriterMap(OriginalConfig.writer_map, ""))
     settable_attributes.append('writer_map')
 
+
 def get_config_proxy(OriginalConfig):
     # Here is where the real proxying occurs.
     SupybotConfigProxy._SupybotConfigProxy__OriginalConfig = OriginalConfig
     return SupybotConfigProxy
-
-
