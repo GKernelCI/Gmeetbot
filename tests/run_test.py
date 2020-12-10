@@ -28,7 +28,7 @@ class MeetBotTest(unittest.TestCase):
             del sys.path[0]
 
     def test_supybottests(self):
-        """Test by sending input to supybot, check responses.
+        """Test by sending input to Supybot, check responses.
 
         Uses the external supybot-test command.  Unfortunantly, that
         doesn't have a useful status code, so I need to parse the
@@ -38,8 +38,8 @@ class MeetBotTest(unittest.TestCase):
         try:
             output = os.popen("supybot-test ./MeetBot 2>&1").read()
             print(output)
-            assert 'FAILED' not in output, "supybot-based tests failed."
-            assert '\nOK\n'     in output, "supybot-based tests failed."
+            assert 'FAILED' not in output, "Supybot-based tests failed."
+            assert '\nOK\n'     in output, "Supybot-based tests failed."
         finally:
             os.unlink("MeetBot")
 
@@ -227,7 +227,7 @@ class MeetBotTest(unittest.TestCase):
                      extraConfig={'filenamePattern':fnamepattern})
             M.addline('nobody', '#startmeeting')
             return M
-        # Test the %(channel)s and %(network)s commands in supybot.
+        # Test the %(channel)s and %(network)s commands in Supybot.
         M = getM('%(channel)s-%(network)s')
         assert M.config.filename().endswith('somechannel-somenetwork'), \
                "Filename not as expected: "+M.config.filename()

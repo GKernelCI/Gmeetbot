@@ -39,7 +39,7 @@ from importlib import reload
 
 # Use this for the version of this plugin.  You may wish to put a CVS keyword
 # in here if you're keeping the plugin in CVS or some similar system.
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 
 # XXX Replace this with an appropriate author or supybot.Author instance.
 __author__ = supybot.Author('Krytarik Raido', 'krytarik', 'krytarik@gmail.com')
