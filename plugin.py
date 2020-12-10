@@ -1,5 +1,6 @@
 ###
 # Copyright (c) 2009, Richard Darst
+# Copyright (c) 2018, Krytarik Raido
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -25,7 +26,6 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
 ###
 
 import supybot.utils as utils
@@ -37,8 +37,9 @@ import supybot.ircmsgs as ircmsgs
 
 import time
 import re
-import meeting
-import supybotconfig
+from imp import reload
+from . import meeting
+from . import supybotconfig
 # Because of the way we override names, we need to reload these in order.
 meeting = reload(meeting)
 supybotconfig = reload(supybotconfig)
@@ -150,7 +151,7 @@ class MeetBot(callbacks.Plugin):
 		
         """ private voting system """
         if channel[:1] != '#' and re.match("\+1|0|\+0|-1",payload):
-            for key in meeting_cache.keys():
+            for key in list(meeting_cache.keys()):
                 if payload.endswith(key[0]):
                     voteMeeting = meeting_cache.get(key, None)
                     if voteMeeting is not None:
@@ -180,8 +181,8 @@ class MeetBot(callbacks.Plugin):
                     M.addrawline(nick, payload)
         except:
             import traceback
-            print traceback.print_exc()
-            print "(above exception in outFilter, ignoring)"
+            print(traceback.print_exc())
+            print("(above exception in outFilter, ignoring)")
         return msg
 
     # These are admin commands, for use by the bot owner when there
@@ -203,7 +204,7 @@ class MeetBot(callbacks.Plugin):
 
         Save all currently active meetings."""
         numSaved = 0
-        for M in meeting_cache.iteritems():
+        for M in list(meeting_cache.items()):
             M.config.save()
         irc.reply("Saved %d meetings."%numSaved)
     savemeetings = wrap(savemeetings, ['admin'])

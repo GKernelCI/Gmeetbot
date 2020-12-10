@@ -1,5 +1,3 @@
-# Richard Darst, 2009
-
 import os
 import re
 import sys
@@ -7,8 +5,8 @@ import tempfile
 import unittest
 
 os.environ['MEETBOT_RUNNING_TESTS'] = '1'
-import meeting
-import writers
+from .. import meeting
+from .. import writers
 
 running_tests = True
 
@@ -26,7 +24,7 @@ class MeetBotTest(unittest.TestCase):
         sys.argv[1:] = ["replay", "test-script-1.log.txt"]
         sys.path.insert(0, "..")
         try:
-            execfile("../meeting.py", {})
+            exec(compile(open("../meeting.py").read(), "../meeting.py", 'exec'), {})
         finally:
             del sys.path[0]
 
@@ -40,7 +38,7 @@ class MeetBotTest(unittest.TestCase):
         os.symlink("..", "MeetBot")
         try:
             output = os.popen("supybot-test ./MeetBot 2>&1").read()
-            print output
+            print(output)
             assert 'FAILED' not in output, "supybot-based tests failed."
             assert '\nOK\n'     in output, "supybot-based tests failed."
         finally:
@@ -113,31 +111,31 @@ class MeetBotTest(unittest.TestCase):
         M = process_meeting(contents=self.all_commands_test_contents,
                             extraConfig={'writer_map':self.full_writer_map})
         results = M.save()
-        for name, output in results.iteritems():
-            self.assert_('h6k4orkac' in output, "Topic failed for %s"%name)
-            self.assert_('blaoulrao' in output, "Info failed for %s"%name)
-            self.assert_('alrkkcao4' in output, "Idea failed for %s"%name)
-            self.assert_('ntoircoa5' in output, "Help failed for %s"%name)
-            self.assert_('http://bnatorkcao.net' in output,
+        for name, output in list(results.items()):
+            self.assertTrue('h6k4orkac' in output, "Topic failed for %s"%name)
+            self.assertTrue('blaoulrao' in output, "Info failed for %s"%name)
+            self.assertTrue('alrkkcao4' in output, "Idea failed for %s"%name)
+            self.assertTrue('ntoircoa5' in output, "Help failed for %s"%name)
+            self.assertTrue('http://bnatorkcao.net' in output,
                                                   "Link(1) failed for %s"%name)
-            self.assert_('kroacaonteu' in output, "Link(2) failed for %s"%name)
-            self.assert_('http://jrotjkor.net' in output,
+            self.assertTrue('kroacaonteu' in output, "Link(2) failed for %s"%name)
+            self.assertTrue('http://jrotjkor.net' in output,
                                         "Link detection(1) failed for %s"%name)
-            self.assert_('krotroun' in output,
+            self.assertTrue('krotroun' in output,
                                         "Link detection(2) failed for %s"%name)
-            self.assert_('xrceoukrc' in output, "Action failed for %s"%name)
-            self.assert_('okbtrokr' in output, "Nick failed for %s"%name)
+            self.assertTrue('xrceoukrc' in output, "Action failed for %s"%name)
+            self.assertTrue('okbtrokr' in output, "Nick failed for %s"%name)
 
             # Things which should only appear or not appear in the
             # notes (not the logs):
             if 'log' not in name:
-                self.assert_( 'ckmorkont' not in output,
+                self.assertTrue( 'ckmorkont' not in output,
                               "Undo failed for %s"%name)
-                self.assert_('topic_doeschange' in output,
+                self.assertTrue('topic_doeschange' in output,
                              "Chair changing topic failed for %s"%name)
-                self.assert_('topic_doesntchange' not in output,
+                self.assertTrue('topic_doesntchange' not in output,
                              "Non-chair not changing topic failed for %s"%name)
-                self.assert_('topic_doesnt2change' not in output,
+                self.assertTrue('topic_doesnt2change' not in output,
                             "Un-chaired was able to chang topic for %s"%name)
 
     #def test_contents_test(self):
@@ -168,19 +166,19 @@ class MeetBotTest(unittest.TestCase):
     def test_css_embed(self):
         extraConfig={ }
         results = self.M_trivial(extraConfig={}).save()
-        self.assert_('<link rel="stylesheet" ' not in results['.html'])
-        self.assert_('body {'                      in results['.html'])
-        self.assert_('<link rel="stylesheet" ' not in results['.log.html'])
-        self.assert_('body {'                      in results['.log.html'])
+        self.assertTrue('<link rel="stylesheet" ' not in results['.html'])
+        self.assertTrue('body {'                      in results['.html'])
+        self.assertTrue('<link rel="stylesheet" ' not in results['.log.html'])
+        self.assertTrue('body {'                      in results['.log.html'])
     def test_css_noembed(self):
         extraConfig={'cssEmbed_minutes':False,
                      'cssEmbed_log':False,}
         M = self.M_trivial(extraConfig=extraConfig)
         results = M.save()
-        self.assert_('<link rel="stylesheet" '     in results['.html'])
-        self.assert_('body {'                  not in results['.html'])
-        self.assert_('<link rel="stylesheet" '     in results['.log.html'])
-        self.assert_('body {'                  not in results['.log.html'])
+        self.assertTrue('<link rel="stylesheet" '     in results['.html'])
+        self.assertTrue('body {'                  not in results['.html'])
+        self.assertTrue('<link rel="stylesheet" '     in results['.log.html'])
+        self.assertTrue('body {'                  not in results['.log.html'])
     def test_css_file(self):
         tmpf = tempfile.NamedTemporaryFile()
         magic_string = '546uorck6o45tuo6'
@@ -190,10 +188,10 @@ class MeetBotTest(unittest.TestCase):
                      'cssFile_log':      tmpf.name,}
         M = self.M_trivial(extraConfig=extraConfig)
         results = M.save()
-        self.assert_('<link rel="stylesheet" ' not in results['.html'])
-        self.assert_(magic_string                  in results['.html'])
-        self.assert_('<link rel="stylesheet" ' not in results['.log.html'])
-        self.assert_(magic_string                  in results['.log.html'])
+        self.assertTrue('<link rel="stylesheet" ' not in results['.html'])
+        self.assertTrue(magic_string                  in results['.html'])
+        self.assertTrue('<link rel="stylesheet" ' not in results['.log.html'])
+        self.assertTrue(magic_string                  in results['.log.html'])
     def test_css_file_embed(self):
         tmpf = tempfile.NamedTemporaryFile()
         magic_string = '546uorck6o45tuo6'
@@ -205,10 +203,10 @@ class MeetBotTest(unittest.TestCase):
                      'cssEmbed_log':     False,}
         M = self.M_trivial(extraConfig=extraConfig)
         results = M.save()
-        self.assert_('<link rel="stylesheet" '     in results['.html'])
-        self.assert_(tmpf.name                     in results['.html'])
-        self.assert_('<link rel="stylesheet" '     in results['.log.html'])
-        self.assert_(tmpf.name                     in results['.log.html'])
+        self.assertTrue('<link rel="stylesheet" '     in results['.html'])
+        self.assertTrue(tmpf.name                     in results['.html'])
+        self.assertTrue('<link rel="stylesheet" '     in results['.log.html'])
+        self.assertTrue(tmpf.name                     in results['.log.html'])
     def test_css_none(self):
         tmpf = tempfile.NamedTemporaryFile()
         magic_string = '546uorck6o45tuo6'
@@ -218,10 +216,10 @@ class MeetBotTest(unittest.TestCase):
                      'cssFile_log':      'none',}
         M = self.M_trivial(extraConfig=extraConfig)
         results = M.save()
-        self.assert_('<link rel="stylesheet" ' not in results['.html'])
-        self.assert_('<style type="text/css" ' not in results['.html'])
-        self.assert_('<link rel="stylesheet" ' not in results['.log.html'])
-        self.assert_('<style type="text/css" ' not in results['.log.html'])
+        self.assertTrue('<link rel="stylesheet" ' not in results['.html'])
+        self.assertTrue('<style type="text/css" ' not in results['.html'])
+        self.assertTrue('<link rel="stylesheet" ' not in results['.log.html'])
+        self.assertTrue('<style type="text/css" ' not in results['.log.html'])
 
     def test_filenamevars(self):
         def getM(fnamepattern):
@@ -253,7 +251,7 @@ if __name__ == '__main__':
         unittest.main()
     else:
         for testname in sys.argv[1:]:
-            print testname
+            print(testname)
             if hasattr(MeetBotTest, testname):
                 MeetBotTest(methodName=testname).debug()
             else:

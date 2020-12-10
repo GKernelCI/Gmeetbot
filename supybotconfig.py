@@ -1,7 +1,6 @@
-# Richard Darst, June 2009
-
 ###
 # Copyright (c) 2009, Richard Darst
+# Copyright (c) 2018, Krytarik Raido
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,12 +30,13 @@
 
 
 import types
+import sys
 
 import supybot.conf as conf
 import supybot.registry as registry
 
-import meeting
-import writers
+from . import meeting
+from . import writers
 
 # The plugin group for configuration
 MeetBotConfigGroup = conf.registerPlugin('MeetBot')
@@ -60,14 +60,14 @@ class WriterMap(registry.String):
             writer_map[ext] = getattr(writers, writer)
         self.setValue(writer_map)
     def setValue(self, writer_map):
-        for e, w in writer_map.iteritems():
+        for e, w in list(writer_map.items()):
             if not hasattr(w, "format"):
                 raise ValueError("Writer %s must have method .format()"%
                                  w.__name__)
             self.value = writer_map
     def __str__(self):
         writers_string = [ ]
-        for ext, w in self.value.iteritems():
+        for ext, w in list(self.value.items()):
             name = w.__name__
             writers_string.append("%s:%s"%(name, ext))
         return " ".join(writers_string)
@@ -86,7 +86,8 @@ class SupybotConfigProxy(object):
         if attrname in settable_attributes:
             value = self.__C.M._registryValue(attrname,
                                               channel=self.__C.M.channel)
-            if not isinstance(value, (str, unicode)):
+            if not (isinstance(value, str) or
+                    (sys.version_info < (3,0) and isinstance(value, unicode))):
                 return value
             # '.' is used to mean "this is not set, use the default
             # value from the python config class.
@@ -103,8 +104,8 @@ class SupybotConfigProxy(object):
         # method will bypass the supybot proxy and just use default
         # values).  This will slow things down a little bit, but
         # that's just the cost of duing business.
-        if hasattr(value, 'im_func'):
-            return types.MethodType(value.im_func, self, value.im_class)
+        if hasattr(value, '__func__'):
+            return types.MethodType(value.__func__, self, value.__self__.__class__)
         return value
 
 
@@ -127,7 +128,8 @@ def setup_config(OriginalConfig):
             continue
         attr = getattr(OriginalConfig, attrname)
         # Don't configure attributes that aren't strings.
-        if isinstance(attr, (str, unicode)):
+        if isinstance(attr, str) or \
+                (sys.version_info < (3,0) and isinstance(attr, unicode)):
             attr = attr.replace('\n', '\\n')
             # For a global value: conf.registerGlobalValue and remove the
             # channel= option from registryValue call above.

@@ -1,5 +1,6 @@
 ###
 # Copyright (c) 2009, Richard Darst
+# Copyright (c) 2018, Krytarik Raido
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -25,7 +26,6 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
 ###
 
 """
@@ -35,29 +35,32 @@ here.  This should describe *what* the plugin does.
 
 import supybot
 import supybot.world as world
+from imp import reload
 
 # Use this for the version of this plugin.  You may wish to put a CVS keyword
 # in here if you're keeping the plugin in CVS or some similar system.
-__version__ = ""
+__version__ = "0.2.0"
 
 # XXX Replace this with an appropriate author or supybot.Author instance.
-__author__ = supybot.Author('Richard Darst', 'MrBeige', 'rkd@zgib.net')
+__author__ = supybot.Author('Krytarik Raido', 'krytarik', 'krytarik@tuxgarage.com')
 
 # This is a dictionary mapping supybot.Author instances to lists of
 # contributions.
-__contributors__ = {}
+__contributors__ = {
+    supybot.Author('Richard Darst', 'MrBeige', 'rkd@zgib.net'): ['Original Author']
+}
 
 # This is a url where the most recent plugin package can be downloaded.
-__url__ = '' # 'http://supybot.com/Members/yourname/MeetBot/download'
+__url__ = 'https://launchpad.net/ubuntu-bots'
 
-import config
-import plugin
+from . import config
+from . import plugin
 reload(plugin) # In case we're being reloaded.
 # Add more reloads here if you add third-party modules and want them to be
 # reloaded when this plugin is reloaded.  Don't forget to import them as well!
 
 if world.testing:
-    import test
+    from . import test
 
 Class = plugin.Class
 configure = config.configure

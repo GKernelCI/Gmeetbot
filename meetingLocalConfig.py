@@ -1,4 +1,4 @@
-import writers
+from . import writers
 import re
 class Config(object):
     logFileDir = '/var/www/mootbot/'

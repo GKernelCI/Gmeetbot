@@ -1,5 +1,6 @@
 ###
 # Copyright (c) 2009, Richard Darst
+# Copyright (c) 2018, Krytarik Raido
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -25,7 +26,6 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
 ###
 
 from supybot.test import *
@@ -38,7 +38,7 @@ class MeetBotTestCase(ChannelPluginTestCase):
     plugins = ('MeetBot',)
 
     def testRunMeeting(self):
-        test_script = file(os.path.join(os.path.dirname(__file__),
+        test_script = open(os.path.join(os.path.dirname(__file__),
                                         "tests/test-script-2.log.txt"))
         for line in test_script:
             # Normalize input lines somewhat.
@@ -70,14 +70,17 @@ class MeetBotTestCase(ChannelPluginTestCase):
                     groups = re.search(test[0], line).groups()
                     # Output pattern depends on input pattern
                     if isinstance(test[1], int):
-                        print groups[test[1]-1], reply
+                        print(groups[test[1]-1], reply)
                         assert re.search(re.escape(groups[test[1]-1]), reply),\
                               'line "%s" gives output "%s"'%(line, reply)
                     # Just match the given pattern.
                     else:
-                        print test[1], reply
-                        assert re.search(test[1], reply.decode('utf-8')), \
+                        if sys.version_info < (3,0):
+                            reply = reply.decode('utf-8')
+                        print(test[1], reply)
+                        assert re.search(test[1], reply), \
                                'line "%s" gives output "%s"'%(line, reply)
+        test_script.close()
 
 
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:

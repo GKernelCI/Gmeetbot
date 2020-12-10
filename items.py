@@ -1,7 +1,6 @@
-# Richard Darst, June 2009
-
 ###
 # Copyright (c) 2009, Richard Darst
+# Copyright (c) 2018, Krytarik Raido
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,7 +31,7 @@
 import os
 import time
 
-import writers
+from . import writers
 #from writers import html, rst
 import itertools
 
@@ -86,7 +85,7 @@ class _BaseItem(object):
         return replacements
     def template(self, M, escapewith):
         template = { }
-        for k,v in self.get_replacements(M, escapewith).iteritems():
+        for k,v in list(self.get_replacements(M, escapewith).items()):
             if k not in ('itemtype', 'line', 'topic',
                          'url', 'url_quoteescaped',
                          'nick', 'time', 'link', 'anchor'):

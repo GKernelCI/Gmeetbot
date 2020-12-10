@@ -1,7 +1,6 @@
-﻿# Richard Darst, June 2009
-
 ###
 # Copyright (c) 2009, Richard Darst
+# Copyright (c) 2018, Krytarik Raido
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,7 +37,7 @@ import time
 
 # Needed for testing with isinstance() for properly writing.
 #from items import Topic, Action
-import items
+from . import items
 
 # Data sanitizing for various output methods
 def html(text):
@@ -75,7 +74,7 @@ def replaceWRAP(item):
 
 
 def MeetBotVersion():
-    import meeting
+    from . import meeting
     if hasattr(meeting, '__version__'):
         return ' '+meeting.__version__
     else:
@@ -119,12 +118,12 @@ class _BaseWriter(object):
                 'MeetBotVersion':MeetBotVersion(),
              }
     def iterNickCounts(self):
-        nicks = [ (n,c) for (n,c) in self.M.attendees.iteritems() ]
+        nicks = [ (n,c) for (n,c) in list(self.M.attendees.items()) ]
         nicks.sort(key=lambda x: x[1], reverse=True)
         return nicks
 
     def iterActionItemsNick(self):
-        for nick in sorted(self.M.attendees.keys(), key=lambda x: x.lower()):
+        for nick in sorted(list(self.M.attendees.keys()), key=lambda x: x.lower()):
             def nickitems():
                 for m in self.M.minutes:
                     # The hack below is needed because of pickling problems
@@ -328,19 +327,20 @@ class _CSSmanager(object):
             # Stylesheet specified
             if getattr(self.M.config, 'cssEmbed_'+name, True):
                 # external stylesheet
-                css = file(css_fname).read()
+                with open(css_fname) as f:
+                    css = f.read()
                 return self._css_head%css
             else:
                 # linked stylesheet
                 css_head = ('''<link rel="stylesheet" type="text/css" '''
                             '''href="%s">'''%cssfile)
                 return css_head
-        except Exception, exc:
+        except Exception as exc:
             if not self.M.config.safeMode:
                 raise
             import traceback
             traceback.print_exc()
-            print "(exception above ignored, continuing)"
+            print("(exception above ignored, continuing)")
             try:
                 css_fname = os.path.join(os.path.dirname(__file__),
                                          'css-'+name+'-default.css')
@@ -476,9 +476,9 @@ class HTMLlog2(_BaseWriter, _CSSmanager):
                                 'nick':html(m.group('nick')),
                                 'line':html(m.group('line')),})
                 continue
-            print l
-            print m.groups()
-            print "**error**", l
+            print(l)
+            print(m.groups())
+            print("**error**", l)
 
         css = self.getCSS(name='log')
         return html_template%{'pageTitle':"%s log"%html(M.channel),
@@ -855,7 +855,7 @@ class ReST(_BaseWriter):
 
         # Action Items, by person (This could be made lots more efficient)
         ActionItemsPerson = [ ]
-        for nick in sorted(M.attendees.keys(), key=lambda x: x.lower()):
+        for nick in sorted(list(M.attendees.keys()), key=lambda x: x.lower()):
             headerPrinted = False
             for m in M.minutes:
                 # The hack below is needed because of pickling problems
@@ -960,7 +960,7 @@ class Text(_BaseWriter):
         ActionItemsPerson = [ ]
         ActionItemsPerson.append(self.heading('Action items, by person'))
         numberAssigned = 0
-        for nick in sorted(M.attendees.keys(), key=lambda x: x.lower()):
+        for nick in sorted(list(M.attendees.keys()), key=lambda x: x.lower()):
             headerPrinted = False
             for m in M.minutes:
                 # The hack below is needed because of pickling problems
@@ -1087,7 +1087,7 @@ class MediaWiki(_BaseWriter):
         ActionItemsPerson = [ ]
         ActionItemsPerson.append(self.heading('Action items, by person'))
         numberAssigned = 0
-        for nick in sorted(M.attendees.keys(), key=lambda x: x.lower()):
+        for nick in sorted(list(M.attendees.keys()), key=lambda x: x.lower()):
             headerPrinted = False
             for m in M.minutes:
                 # The hack below is needed because of pickling problems
@@ -1172,7 +1172,7 @@ class PmWiki(MediaWiki, object):
         return '%s %s\n'%('!'*(level+1), name)
     def replacements(self):
         #repl = super(PmWiki, self).replacements(self) # fails, type checking
-        repl = MediaWiki.replacements.im_func(self)
+        repl = MediaWiki.replacements.__func__(self)
         repl['pageTitleHeading'] = self.heading(repl['pageTitle'],level=0)
         return repl
 
@@ -1255,7 +1255,7 @@ class Moin(_BaseWriter):
         ActionItemsPerson = [ ]
         ActionItemsPerson.append(self.heading('Action items, by person'))
         numberAssigned = 0
-        for nick in sorted(M.attendees.keys(), key=lambda x: x.lower()):
+        for nick in sorted(list(M.attendees.keys()), key=lambda x: x.lower()):
             headerPrinted = False
             for m in M.minutes:
                 # The hack below is needed because of pickling problems

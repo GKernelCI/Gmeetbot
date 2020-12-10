@@ -1,7 +1,6 @@
-# Richard Darst, May 2009
-
 ###
 # Copyright (c) 2009, Richard Darst
+# Copyright (c) 2018, Krytarik Raido
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,15 +32,17 @@ import time
 import os
 import re
 import stat
-import urllib
+import sys
+import supybot.utils as utils
 
-import writers
-import items
+from imp import reload
+from . import writers
+from . import items
 
 reload(writers)
 reload(items)
 
-__version__ = "0.1.5"
+__version__ = "0.2.0"
 
 class Config(object):
     #
@@ -101,9 +102,13 @@ class Config(object):
     output_codec = 'utf-8'
     # Functions to do the i/o conversion.
     def enc(self, text):
-        return text.encode(self.output_codec, 'replace')
+        if sys.version_info < (3,0):
+            return text.encode(self.output_codec, 'replace')
+        return text
     def dec(self, text):
-        return text.decode(self.input_codec, 'replace')
+        if sys.version_info < (3,0):
+            return text.decode(self.input_codec, 'replace')
+        return text
     # Write out select logfiles
     update_realtime = True
     # CSS configs:
@@ -130,14 +135,14 @@ class Config(object):
         self.M = M
         self.writers = { }
         # Update config values with anything we may have
-        for k,v in extraConfig.iteritems():
+        for k,v in list(extraConfig.items()):
             setattr(self, k, v)
 
         if hasattr(self, "init_hook"):
             self.init_hook()
         if writeRawLog:
             self.writers['.log.txt'] = writers.TextLog(self.M)
-        for extension, writer in self.writer_map.iteritems():
+        for extension, writer in list(self.writer_map.items()):
             self.writers[extension] = writer(self.M)
         self.safeMode = safeMode
     def filename(self, url=False):
@@ -217,13 +222,12 @@ class Config(object):
             # If it doesn't, then it's assumed that the write took
             # care of writing (or publishing or emailing or wikifying)
             # it itself.
-            if isinstance(text, unicode):
-                text = self.enc(text)
-            if isinstance(text, (str, unicode)):
+            if isinstance(text, str) or \
+                    (sys.version_info < (3,0) and isinstance(text, unicode)):
                 # Have a way to override saving, so no disk files are written.
                 if getattr(self, "dontSave", False):
                     continue
-                self.writeToFile(text, rawname+extension)
+                self.writeToFile(self.enc(text), rawname+extension)
         if hasattr(self, 'save_hook'):
             self.save_hook(realtime_update=realtime_update)
         return results
@@ -254,7 +258,7 @@ try:
     if getattr(__main__, 'running_tests', False): raise ImportError
     if 'MEETBOT_RUNNING_TESTS' in os.environ: raise ImportError
 
-    import meetingLocalConfig
+    from . import meetingLocalConfig
     meetingLocalConfig = reload(meetingLocalConfig)
     if hasattr(meetingLocalConfig, 'Config'):
         Config = type('Config', (meetingLocalConfig.Config, Config), {})
@@ -274,10 +278,8 @@ class MeetingCommands(object):
     def do_replay(self,nick,time_,line, **kwargs):
         url=line.strip()
         self.reply("looking for meetings in %s"%url)
-        sock = urllib.urlopen(url)
-        htmlSource = sock.read()
-        sock.close()
-        print htmlSource
+        htmlSource = utils.web.getUrl(url)
+        print(htmlSource)
 
 
     def do_startmeeting(self, nick, time_, line, **kwargs):
@@ -374,7 +376,7 @@ class MeetingCommands(object):
             if not chair: continue
             if chair not in self.chairs:
                 if self._channelNicks is not None and \
-                       ( chair.encode(self.config.input_codec)
+                       ( self.config.enc(chair)
                          not in self._channelNicks()):
                     self.reply("Warning: Nick not in channel: %s"%chair)
                 self.addnick(chair, lines=0)
@@ -518,7 +520,7 @@ class MeetingCommands(object):
             if not voter: continue
             if voter not in self.voters:
                 if self._channelNicks is not None and \
-                       ( voter.encode(self.config.input_codec)
+                       ( self.config.enc(voter)
                          not in self._channelNicks()):
                     self.reply("Warning: Nick not in channel: %s"%voter)
                 self.addnick(voter, lines=0)
@@ -527,8 +529,7 @@ class MeetingCommands(object):
         #voters.setdefault(self.owner, True)#not sure about this if resetting voters to everyone - in fact why auto add the person calling #voters at all?
         self.reply("Current voters: %s"%(" ".join(sorted(voters.keys()))))
     def do_private_commands(self, nick, **kwargs):
-        commands = [ "#"+x[3:] for x in dir(self) if x[:3]=="do_" ]
-        commands.sort()
+        commands = sorted([ "#"+x[3:] for x in dir(self) if x[:3]=="do_" ])
         message = "Available commands: "+(" ".join(commands))
         self.privateReply(nick, message)
     # Commands for Anyone:
@@ -571,8 +572,7 @@ class MeetingCommands(object):
         m = items.Link(**kwargs)
         self.additem(m)
     def do_commands(self, **kwargs):
-        commands = ["action", "info", "idea", "nick", "link", "commands"]
-        commands.sort()
+        commands = sorted(["action", "info", "idea", "nick", "link", "commands"])
         self.reply("Available commands: "+(" ".join(commands)))
     def do_done(self, nick, line, **kwargs):
         """Add aggreement to the minutes - chairs only."""
@@ -632,7 +632,7 @@ class Meeting(MeetingCommands, object):
         if hasattr(self, '_sendReply') and not self._lurk:
             self._sendReply(self.config.enc(x))
         else:
-            print "REPLY:", self.config.enc(x)
+            print("REPLY:", self.config.enc(x))
     def privateReply(self, nick, x):
         """Send a reply to nick"""
         if hasattr(self, '_sendPrivateReply') and not self._lurk:
@@ -642,7 +642,7 @@ class Meeting(MeetingCommands, object):
         if hasattr(self, '_setTopic') and not self._lurk:
             self._setTopic(self.config.enc(x))
         else:
-            print "TOPIC:", self.config.enc(x)
+            print("TOPIC:", self.config.enc(x))
     def settopic(self):
         "The actual code to set the topic"
         if self._meetingTopic:
@@ -806,7 +806,6 @@ def replay_meeting(channel
 
 # None of this is very well refined.
 if __name__ == '__main__':
-    import sys
     if sys.argv[1] == 'replay':
         fname = sys.argv[2]
         m = re.match('(.*)\.log\.txt', fname)
@@ -814,12 +813,13 @@ if __name__ == '__main__':
             filename = m.group(1)
         else:
             filename = os.path.splitext(fname)[0]
-        print 'Saving to:', filename
+        print('Saving to:', filename)
         channel = '#'+os.path.basename(sys.argv[2]).split('.')[0]
 
         M = Meeting(channel=channel, owner=None,
                     filename=filename, writeRawLog=False)
-        for line in file(sys.argv[2]):
+        f = open(sys.argv[2])
+        for line in f:
             # match regular spoken lines:
             m = logline_re.match(line)
             if m:
@@ -836,7 +836,8 @@ if __name__ == '__main__':
                 nick = m.group(2).strip()
                 line = m.group(3).strip()
                 M.addline(nick, "ACTION "+line, time_=time_)
+        f.close()
         #M.save() # should be done by #endmeeting in the logs!
     else:
-        print 'Command "%s" not found.'%sys.argv[1]
+        print('Command "%s" not found.'%sys.argv[1])
 
