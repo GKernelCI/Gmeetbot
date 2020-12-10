@@ -1,5 +1,6 @@
 ###
 # Copyright (c) 2009, Richard Darst
+# Copyright (c) 2020, Krytarik Raido
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -40,12 +41,9 @@ def configure(advanced):
 
 
 MeetBot = conf.registerPlugin('MeetBot')
-# This is where your configuration variables (if any) should go.  For example:
-# conf.registerGlobalValue(MeetBot, 'someConfigVariableName',
-#     registry.Boolean(False, """Help for someConfigVariableName."""))
 conf.registerGlobalValue(MeetBot, 'enableSupybotBasedConfig',
-    registry.Boolean(False, """Enable configuration via the supybot config """
-                            """mechanism."""))
+    registry.Boolean(False, """Enable configuration via the Supybot config
+                            mechanism."""))
 
 
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:

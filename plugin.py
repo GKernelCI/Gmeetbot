@@ -34,7 +34,7 @@ import supybot.ircmsgs as ircmsgs
 import supybot.callbacks as callbacks
 
 import re, time
-from imp import reload
+from importlib import reload
 from . import meeting
 from . import supybotconfig
 

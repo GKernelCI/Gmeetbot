@@ -32,14 +32,14 @@ import os, sys, re
 import time, stat
 import supybot.utils as utils
 
-from imp import reload
+from importlib import reload
 from . import writers
 from . import items
 
 reload(writers)
 reload(items)
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 class Config(object):
     #

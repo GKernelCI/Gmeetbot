@@ -35,14 +35,14 @@ here.  This should describe *what* the plugin does.
 
 import supybot
 import supybot.world as world
-from imp import reload
+from importlib import reload
 
 # Use this for the version of this plugin.  You may wish to put a CVS keyword
 # in here if you're keeping the plugin in CVS or some similar system.
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 # XXX Replace this with an appropriate author or supybot.Author instance.
-__author__ = supybot.Author('Krytarik Raido', 'krytarik', 'krytarik@tuxgarage.com')
+__author__ = supybot.Author('Krytarik Raido', 'krytarik', 'krytarik@gmail.com')
 
 # This is a dictionary mapping supybot.Author instances to lists of
 # contributions.
