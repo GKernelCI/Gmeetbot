@@ -104,7 +104,6 @@ class _BaseItem(object):
     def logURL(self, M):
         return M.config.basename+'.log.html'
 
-
 class Topic(_BaseItem):
     itemtype = 'TOPIC'
     html_template = """<tr><td><a href='%(link)s#%(anchor)s'>%(time)s</a></td>
@@ -160,7 +159,7 @@ class Topic(_BaseItem):
 
 class Subtopic(Topic):
     itemtype = 'SUBTOPIC'
-    moin_template = """%(startmoin)s%(line)s%(endmoin)s  (%(nick)s, %(time)s)"""
+    moin_template = """%(startmoin)s%(topic)s%(endmoin)s  (%(nick)s, %(time)s)"""
     starthtml = '<b class="SUBTOPIC">'
     endhtml = '</b>'
     startmoin = "'''"

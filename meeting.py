@@ -31,67 +31,67 @@
 import os, sys, re
 import time, stat
 import supybot.utils as utils
+import supybot.log as supylog
 
 from importlib import reload
+from . import config
 from . import writers
 from . import items
 
-reload(writers)
 reload(items)
 
-__version__ = "0.3.2"
+from . import __version__
 
 class Config(object):
     #
-    # Throw any overrides into meetingLocalConfig.py in this directory:
+    # Throw any overrides into meetingLocalConfig.py in this directory
     #
-    # Where to store files on disk
-    # Example:   logFileDir = '/home/richard/meetbot/'
-    logFileDir = '/var/www/mootbot/'
+    # Where to store the logfiles on disk
+    logFileDir = '/var/www/meetbot/'
     # The links to the logfiles are given this prefix
-    # Example:   logUrlPrefix = 'http://rkd.zgib.net/meetbot/'
-    logUrlPrefix = ''
+    logUrlPrefix = 'http://meetbot.debian.net/'
     # Give the pattern to save files into here.  Use %(channel)s for
-    # channel.  This will be sent through strftime for substituting it
-    # times, howover, for strftime codes you must use doubled percent
+    # channel.  This will be sent through strftime for substituting the
+    # times; however, for strftime codes you must use doubled percent
     # signs (%%).  This will be joined with the directories above.
     filenamePattern = '%(channel)s/%%Y/%(channel)s.%%F-%%H.%%M'
     # Where to say to go for more information about MeetBot
     MeetBotInfoURL = 'https://wiki.debian.org/MeetBot'
     # This is used with the #restrict command to remove permissions from files.
     RestrictPerm = stat.S_IRWXO|stat.S_IRWXG  # g,o perm zeroed
-    # RestrictPerm = stat.S_IRWXU|stat.S_IRWXO|stat.S_IRWXG  #u,g,o perm zeroed
-    # used to detect #link :
-    UrlProtocols = ('http:', 'https:', 'irc:', 'ftp:', 'mailto:', 'ssh:')
-    # regular expression for parsing commands.  First group is the cmd name,
-    # second group is the rest of the line.
+    #RestrictPerm = stat.S_IRWXU|stat.S_IRWXO|stat.S_IRWXG  # u,g,o perm zeroed
+    # Used to detect #link
+    UrlProtocols = ['http:', 'https:', 'irc:', 'ftp:', 'mailto:', 'ssh:']
+    # Regular expression for parsing commands.
     command_RE = re.compile(r'^#(\w+)(?:\s+(.*?)|)\s*$')
+    # Regular expressions for parsing loglines.
+    logline_RE = re.compile(r'^\[?([0-9:]+)\]?\s*<[@%&+ ]?([^>]+)>\s*(.*?)\s*$')
+    loglineAction_RE = re.compile(r'^\[?([0-9:]+)\]?\s*\*\s*(\S+)\s*(.*?)\s*$')
     # The channels which won't have date/time appended to the filename.
-    specialChannels = ("#meetbot-test", "#meetbot-test2")
+    specialChannels = ["#meetbot-test"]
     specialChannelFilenamePattern = '%(channel)s/%(channel)s'
     # HTML irc log highlighting style.  `pygmentize -L styles` to list.
     pygmentizeStyle = 'friendly'
     # Timezone setting.  You can use friendly names like 'US/Eastern', etc.
-    # Check /usr/share/zoneinfo/ .  Or `man timezone`: this is the contents
+    # Check /usr/share/zoneinfo/ or `man timezone`; this is the content
     # of the TZ environment variable.
     timeZone = 'UTC'
     # These are the start and end meeting messages, respectively.
     # Some replacements are done before they are used, using the
     # %(name)s syntax.  Note that since one replacement is done below,
     # you have to use doubled percent signs.  Also, it gets split by
-    # '\n' and each part between newlines get said in a separate IRC
+    # '\n' and each part between newlines gets said in a separate IRC
     # message.
     startMeetingMessage = ("Meeting started at %(starttime)s %(timeZone)s.  "
-              "The chair is %(chair)s.  Information about MeetBot at "
+              "The chair is %(owner)s.  Information about MeetBot at "
               "%(MeetBotInfoURL)s")
+    # TODO: endMeetingMessage should get filenames from the writers
     endMeetingMessage = ("Meeting ended at %(endtime)s %(timeZone)s.  "
                          "Minutes at %(urlBasename)s.moin.txt")
-    endMeetingNotification = ("Meeting in %(channel)s has just ended")
+    endMeetingNotification = ("%(meeting)s in %(channel)s has just ended")
     endMeetingNotificationList = ["jose"]
 
-    #TODO: endMeetingMessage should get filenames from the writers
-
-    #should the bot talk in the channel
+    # Should the bot talk in the channel
     beNoisy = True
     # Input/output codecs.
     input_codec = 'utf-8'
@@ -107,7 +107,7 @@ class Config(object):
         return text
     # Write out select logfiles
     update_realtime = True
-    # CSS configs:
+    # CSS configs
     cssFile_log      = 'default'
     cssEmbed_log     = True
     cssFile_minutes  = 'default'
@@ -125,23 +125,23 @@ class Config(object):
         '.rst.html': writers.HTMLfromReST,
         '.moin.txt': writers.Moin,
         '.mw.txt': writers.MediaWiki,
-        }
+    }
 
     def __init__(self, M, writeRawLog=False, safeMode=False,
                  extraConfig={}):
         self.M = M
-        self.writers = {}
+        self.writeRawLog = writeRawLog
+        self.safeMode = safeMode
         # Update config values with anything we may have
         for k, v in list(extraConfig.items()):
             setattr(self, k, v)
 
-        if hasattr(self, "init_hook"):
-            self.init_hook()
-        if writeRawLog:
+    def setWriters(self):
+        self.writers = {}
+        if self.writeRawLog:
             self.writers['.log.txt'] = writers.TextLog(self.M)
         for extension, writer in list(self.writer_map.items()):
             self.writers[extension] = writer(self.M)
-        self.safeMode = safeMode
 
     def filename(self, url=False):
         # provide a way to override the filename.  If it is
@@ -183,14 +183,16 @@ class Config(object):
         """Write all output files.
 
         If `realtime_update` is true, then this isn't a complete save,
-        it will only update those writers with the update_realtime
-        attribute true.  (default update_realtime=False for this method)"""
+        it will only update those writers with the realtime_update
+        attribute true."""
         if realtime_update and not hasattr(self.M, 'starttime'):
             return
         rawname = self.filename()
         # We want to write the rawlog (.log.txt) first in case the
         # other methods break.  That way, we have saved enough to
         # replay.
+        if not hasattr(self, 'writers'):
+            self.setWriters()
         writer_names = list(self.writers.keys())
         results = {}
         if '.log.txt' in writer_names:
@@ -201,9 +203,9 @@ class Config(object):
             # Why this?  If this is a realtime (step-by-step) update,
             # then we only want to update those writers which say they
             # should be updated step-by-step.
-            if (realtime_update and
-                ( not getattr(writer, 'update_realtime', False) or
-                  getattr(self, '_filename', None) )
+            if (realtime_update and (not self.update_realtime or
+                  not getattr(writer, 'update_realtime', False) or
+                  getattr(self, '_filename', None))
                 ):
                 continue
             # Parse embedded arguments
@@ -227,8 +229,6 @@ class Config(object):
                 if getattr(self, "dontSave", False):
                     continue
                 self.writeToFile(self.enc(text), rawname+extension)
-        if hasattr(self, 'save_hook'):
-            self.save_hook(realtime_update=realtime_update)
         return results
 
     def writeToFile(self, string, filename):
@@ -248,16 +248,8 @@ class Config(object):
         os.chmod(f.name, newmode)
 
 
-# Set the timezone, using the variable above
-os.environ['TZ'] = Config.timeZone
-time.tzset()
-
-# load custom local configurations
+# Load local configuration
 try:
-    import __main__
-    if getattr(__main__, 'running_tests', False): raise ImportError
-    if 'MEETBOT_RUNNING_TESTS' in os.environ: raise ImportError
-
     from . import meetingLocalConfig
     meetingLocalConfig = reload(meetingLocalConfig)
     if hasattr(meetingLocalConfig, 'Config'):
@@ -274,15 +266,13 @@ class MeetingCommands(object):
     #  linenum= <the line number, 1-based index (for logfile)>
     #  time_=   <time it was said>
     # Commands for chairs
-    def do_replay(self, line, **kwargs):
-        url = line
-        self.reply("Looking for meetings in: " + url)
-        htmlSource = utils.web.getUrl(url)
-        print(htmlSource)
-
-    def do_startmeeting(self, line, time_, **kwargs):
+    def do_startmeeting(self, nick, line, time_, **kwargs):
         """Begin a meeting."""
-        self.starttime = time_
+        # In case of replay
+        if not self.owner:
+            self.owner = nick
+        if not getattr(self, "starttime", None):
+            self.starttime = time_
         repl = self.replacements()
         message = self.config.startMeetingMessage % repl
         for messageline in message.split('\n'):
@@ -292,27 +282,28 @@ class MeetingCommands(object):
             self.do_private_commands(chair)
         self.do_commands()
         if line:
-            self.do_meetingtopic(line=line, time_=time_, **kwargs)
+            self.do_meetingtopic(nick=nick, line=line, time_=time_, **kwargs)
 
     def do_endmeeting(self, nick, line, time_, **kwargs):
         """End the meeting."""
         if not self.isChair(nick): return
-        #close any open votes
+        # Close any open votes
         if self.activeVote:
             endVoteKwargs = {"linenum": kwargs.get("linenum", "0"),
                  "time_": time.localtime()}
             self.do_endvote(nick=nick, line=line, **endVoteKwargs)
-        if self.oldtopic:
-            self.topic(self.oldtopic)
+        self.topic(self.oldtopic)
         self.endtime = time_
-        self.config.save()
-        repl = self.replacements()
-        message = self.config.endMeetingMessage % repl
-        for messageline in message.split('\n'):
-            self.reply(messageline)
         self._meetingIsOver = True
-        for nickToPM in self.config.endMeetingNotificationList:
-            self.privateReply(nickToPM, self.config.endMeetingNotification % repl)
+        self.endmeeting()
+
+    def do_abortmeeting(self, nick, line, time_, **kwargs):
+        """Abort the meeting."""
+        pass
+
+    def do_replay(self, line, **kwargs):
+        """Begin a replay."""
+        pass
 
     def do_topic(self, nick, line, **kwargs):
         """Set a new topic in the channel."""
@@ -339,19 +330,19 @@ class MeetingCommands(object):
         self.settopic()
 
     def do_save(self, nick, time_, **kwargs):
-        """Add a chair to the meeting."""
+        """Save the meeting logs by force."""
         if not self.isChair(nick): return
         self.endtime = time_
         self.config.save()
 
     def do_done(self, nick, **kwargs):
-        """Add aggreement to the minutes - chairs only."""
+        """Add done item to the minutes - chairs only."""
         if not self.isChair(nick): return
         m = items.Done(nick=nick, **kwargs)
         self.additem(m)
 
     def do_agreed(self, nick, **kwargs):
-        """Add aggreement to the minutes - chairs only."""
+        """Add agreement to the minutes - chairs only."""
         if not self.isChair(nick): return
         m = items.Agreed(nick=nick, **kwargs)
         self.additem(m)
@@ -360,14 +351,14 @@ class MeetingCommands(object):
     do_agree = do_agreed
 
     def do_accepted(self, nick, **kwargs):
-        """Add aggreement to the minutes - chairs only."""
+        """Add agreement to the minutes - chairs only."""
         if not self.isChair(nick): return
         m = items.Accepted(nick=nick, **kwargs)
         self.additem(m)
     do_accept = do_accepted
 
     def do_rejected(self, nick, **kwargs):
-        """Add aggreement to the minutes - chairs only."""
+        """Add agreement to the minutes - chairs only."""
         if not self.isChair(nick): return
         m = items.Rejected(nick=nick, **kwargs)
         self.additem(m)
@@ -558,7 +549,7 @@ class MeetingCommands(object):
     def do_nick(self, nick, line, **kwargs):
         """Make meetbot aware of a nick which hasn't said anything.
 
-        To see where this can be used, see #action command."""
+        To see where this can be used, see the #action command."""
         nicks = re.split('[, ]+', line)
         for nick in nicks:
             if not nick: continue
@@ -575,14 +566,20 @@ class MeetingCommands(object):
 class Meeting(MeetingCommands, object):
     _lurk = False
     _restrictlogs = False
-    def __init__(self, channel, owner, oldtopic=None,
+    def __init__(self, channel, owner, botIsOp=False, oldtopic='',
                  filename=None, writeRawLog=False,
                  setTopic=None, sendReply=None, sendPrivateReply=None,
                  getRegistryValue=None,
                  safeMode=False, channelNicks=None,
                  extraConfig={}, network='nonetwork'):
-        self.config = Config(self, writeRawLog=writeRawLog, safeMode=safeMode,
-                            extraConfig=extraConfig)
+
+        # Load configuration
+        self.config = Config
+        if config.is_supybotconfig_enabled(self.config):
+            self.config = config.get_config_proxy(self.config)
+        self.config = self.config(self, writeRawLog=writeRawLog, safeMode=safeMode,
+                                  extraConfig=extraConfig)
+
         if getRegistryValue is not None:
             self._registryValue = getRegistryValue
         if sendReply is not None:
@@ -592,13 +589,13 @@ class Meeting(MeetingCommands, object):
         if setTopic is not None:
             self._setTopic = setTopic
         self.owner = owner
+        self.botIsOp = botIsOp
         self.channel = channel
         self.network = network
         self.currenttopic = ""
-        if oldtopic:
-            self.oldtopic = self.config.dec(oldtopic)
-        else:
-            self.oldtopic = None
+        self.oldtopic = oldtopic
+        if self.oldtopic:
+            self.oldtopic = self.config.dec(self.oldtopic)
         self.lines = []
         self.minutes = []
         self.attendees = {}
@@ -616,33 +613,39 @@ class Meeting(MeetingCommands, object):
         if filename:
             self._filename = filename
 
+        # Set the timezone
+        os.environ['TZ'] = self.config.timeZone
+        time.tzset()
+
     # These commands are callbacks to manipulate the IRC protocol.
-    # set self._sendReply and self._setTopic to an callback to do these things.
+    # Set self._sendReply and self._setTopic to a callback to do these things.
     def reply(self, x):
         """Send a reply to the channel."""
         if hasattr(self, '_sendReply') and not self._lurk:
             self._sendReply(self.config.enc(x))
         else:
-            print("REPLY:", self.config.enc(x))
+            supylog.debug("REPLY: %s" % self.config.enc(x))
     def privateReply(self, nick, x):
-        """Send a reply to nick."""
+        """Send a reply to a nick."""
         if hasattr(self, '_sendPrivateReply') and not self._lurk:
             self._sendPrivateReply(self.config.enc(nick), self.config.enc(x))
     def topic(self, x):
         """Set the topic in the channel."""
-        if hasattr(self, '_setTopic') and not self._lurk:
+        if hasattr(self, '_setTopic') and not self._lurk and self.botIsOp:
             self._setTopic(self.config.enc(x))
         else:
-            print("TOPIC:", self.config.enc(x))
+            supylog.debug("TOPIC: %s" % self.config.enc(x))
     def settopic(self):
         """The actual code to set the topic."""
+        topic = ''
+        if self.oldtopic:
+            topic += '%s | ' % self.oldtopic
         if self._meetingTopic:
-            if "meeting" in self._meetingTopic.lower():
-                topic = '%s | %s | Current topic: %s' % (self.oldtopic, self._meetingTopic, self.currenttopic)
-            else:
-                topic = '%s | %s Meeting | Current topic: %s' % (self.oldtopic, self._meetingTopic, self.currenttopic)
-        else:
-            topic = self.currenttopic
+            topic += self._meetingTopic
+            if "meeting" not in self._meetingTopic.lower():
+                topic += ' meeting'
+            topic += ' | Current topic: '
+        topic += self.currenttopic
         self.topic(topic)
     def addnick(self, nick, lines=1):
         """This person has spoken, lines=<how many lines>"""
@@ -650,8 +653,20 @@ class Meeting(MeetingCommands, object):
     def isChair(self, nick):
         """Is the nick a chair?"""
         return (nick == self.owner or nick in self.chairs or self.isop)
-    def isop(self, nick):
-        return self.isop
+    def endmeeting(self):
+        """The remaining meeting end bits."""
+        self.config.save()
+        repl = self.replacements()
+        message = self.config.endMeetingMessage % repl
+        for messageline in message.split('\n'):
+            self.reply(messageline)
+        for nickToPM in self.config.endMeetingNotificationList:
+            self.privateReply(nickToPM, self.config.endMeetingNotification % repl)
+    def replay(self, url):
+        """Begin a replay."""
+        self.reply("Looking for meetings at: '%s'" % url)
+        htmlSource = utils.web.getUrl(url).decode('utf-8')
+        self.process_meeting(content=htmlSource)
     def save(self, **kwargs):
         return self.config.save(**kwargs)
 
@@ -682,21 +697,21 @@ class Meeting(MeetingCommands, object):
             self.doCastVote(nick, line, time_)
 
     def doCastVote(self, nick, line, time_=None, private=False):
-            """If a vote is under way and the nick is a registered voter
-            and has not already voted in this vote, add the voter name and record the vote.
+        """If a vote is under way and the nick is a registered voter
+        and has not already voted in this vote, add the voter name and record the vote.
 
-            If the voter has already voted, should it reject the second vote,
-            or allow them to change their vote?"""
-            if not self.voters or nick in self.voters:
-                if self.activeVote:
-                    self.currentVote[nick] = line
-                    if not private:
-                        self.publicVoters[self.activeVote].append(nick)
-                        self.reply("%s received from %s" % (line, nick))
+        If the voter has already voted, should it reject the second vote,
+        or allow them to change their vote?"""
+        if not self.voters or nick in self.voters:
+            if self.activeVote:
+                self.currentVote[nick] = line
+                if not private:
+                    self.publicVoters[self.activeVote].append(nick)
+                    self.reply("%s received from %s" % (line, nick))
 
-            #if the vote was in a private message - how do we do that??
-            #self.reply(line + " received from a private vote")
-            #we do record the voter name in the voting structure even if private, so they can't vote twice
+        #if the vote was in a private message - how do we do that??
+        #self.reply(line + " received from a private vote")
+        #we do record the voter name in the voting structure even if private, so they can't vote twice
 
     def addrawline(self, nick, line, time_=None):
         """This adds a line to the log, bypassing command execution."""
@@ -705,7 +720,7 @@ class Meeting(MeetingCommands, object):
         self.addnick(nick)
         line = line.strip('\x01') # \x01 is present in ACTIONs
         # Setting a custom time is useful when replaying logs,
-        # otherwise use our current time:
+        # otherwise use our current time
         if not time_: time_ = time.localtime()
 
         # Handle the logging of the line
@@ -724,103 +739,49 @@ class Meeting(MeetingCommands, object):
         self.minutes.append(m)
 
     def replacements(self):
-        repl = {}
-        repl['channel'] = self.channel
-        repl['network'] = self.network
-        repl['MeetBotInfoURL'] = self.config.MeetBotInfoURL
-        repl['timeZone'] = self.config.timeZone
-        repl['starttime'] = repl['endtime'] = "None"
+        repl = {
+            'channel': self.channel,
+            'network': self.network,
+            'MeetBotInfoURL': self.config.MeetBotInfoURL,
+            'timeZone': self.config.timeZone,
+            'meeting': "Meeting",
+            'starttime': "None",
+            'endtime': "None",
+            'owner': self.owner,
+            'MeetBotVersion': __version__,
+            'urlBasename': self.config.filename(url=True),
+        }
+        if self._meetingTopic:
+            repl['meeting'] = self._meetingTopic
+            if "meeting" not in self._meetingTopic.lower():
+                repl['meeting'] += ' meeting'
         if getattr(self, "starttime", None):
             repl['starttime'] = time.strftime("%H:%M:%S", self.starttime)
         if getattr(self, "endtime", None):
             repl['endtime'] = time.strftime("%H:%M:%S", self.endtime)
-        repl['__version__'] = __version__
-        repl['chair'] = self.owner
-        repl['urlBasename'] = self.config.filename(url=True)
         return repl
 
-
-def parse_time(time_):
-    try: return time.strptime(time_, "%H:%M:%S")
-    except ValueError: pass
-    try: return time.strptime(time_, "%H:%M")
-    except ValueError: pass
-logline_re = re.compile(r'^\[?([0-9: ]*?)\]? *<[@%&+ ]?([^>]+)> *(.*?) *$')
-loglineAction_re = re.compile(r'^\[?([0-9: ]*?)\]? *\* *([^ ]+) *(.*?) *$')
-
-
-def process_meeting(contents, channel, filename,
-                    extraConfig = {},
-                    dontSave=False,
-                    safeMode=True):
-    M = Meeting(channel=channel, owner=None,
-                filename=filename, writeRawLog=False, safeMode=safeMode,
-                extraConfig=extraConfig)
-    if dontSave:
-        M.config.dontSave = True
-    # process all lines
-    for line in contents.split('\n'):
-        # match regular spoken lines:
-        m = logline_re.match(line)
-        if m:
-            time_ = parse_time(m.group(1))
-            nick = m.group(2)
-            line = m.group(3)
-            if not M.owner:
-                M.owner = nick; M.chairs = {nick:True}
-            M.addline(nick, line, time_=time_)
-        # match /me lines
-        m = loglineAction_re.match(line)
-        if m:
-            time_ = parse_time(m.group(1))
-            nick = m.group(2)
-            line = m.group(3)
-            M.addline(nick, "ACTION "+line, time_=time_)
-    return M
-
-
-def replay_meeting(channel,
-                   extraConfig = {},
-                   dontSave=False,
-                   safeMode=True):
-    M = Meeting(channel=channel, owner=None,
-                writeRawLog=False, safeMode=safeMode,
-                extraConfig=extraConfig)
-
-
-# None of this is very well refined.
-if __name__ == '__main__':
-    if sys.argv[1] == 'replay':
-        fname = sys.argv[2]
-        m = re.match('(.*)\.log\.txt', fname)
-        if m:
-            filename = m.group(1)
-        else:
-            filename = os.path.splitext(fname)[0]
-        print('Saving to:', filename)
-        channel = '#'+os.path.basename(sys.argv[2]).split('.')[0]
-
-        M = Meeting(channel=channel, owner=None,
-                    filename=filename, writeRawLog=False)
-        f = open(sys.argv[2])
-        for line in f:
-            # match regular spoken lines:
-            m = logline_re.match(line)
+    def process_meeting(self, content, dontSave=False):
+        def parse_time(time_):
+            try: return time.strptime(time_, "%H:%M")
+            except ValueError: pass
+            try: return time.strptime(time_, "%H:%M:%S")
+            except ValueError: pass
+        if dontSave:
+            self.config.dontSave = True
+        # process all lines
+        for line in content.split('\n'):
+            # match regular spoken lines
+            m = self.config.logline_RE.match(line)
             if m:
                 time_ = parse_time(m.group(1))
                 nick = m.group(2)
                 line = m.group(3)
-                if not M.owner:
-                    M.owner = nick; M.chairs = {nick:True}
-                M.addline(nick, line, time_=time_)
+                self.addline(nick, line, time_=time_)
             # match /me lines
-            m = loglineAction_re.match(line)
+            m = self.config.loglineAction_RE.match(line)
             if m:
                 time_ = parse_time(m.group(1))
                 nick = m.group(2)
                 line = m.group(3)
-                M.addline(nick, "ACTION "+line, time_=time_)
-        f.close()
-        #M.save() # should be done by #endmeeting in the logs!
-    else:
-        print("Command '%s' not found" % sys.argv[1])
+                self.addline(nick, "ACTION "+line, time_=time_)

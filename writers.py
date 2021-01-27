@@ -31,6 +31,8 @@
 import os, re, time
 import textwrap
 
+from . import __version__
+
 # Data sanitizing for various output methods
 def html(text):
     """Escape bad sequences (in HTML) in user-generated lines."""
@@ -69,14 +71,6 @@ def replaceWRAP(item):
     return re_wrap.sub(repl, item)
 
 
-def MeetBotVersion():
-    from . import meeting
-    if hasattr(meeting, '__version__'):
-        return meeting.__version__
-    else:
-        return ''
-
-
 class _BaseWriter(object):
     def __init__(self, M, **kwargs):
         self.M = M
@@ -96,8 +90,11 @@ class _BaseWriter(object):
     @property
     def pagetitle(self):
         if self.M._meetingTopic:
-            return "%s: %s"%(self.M.channel, self.M._meetingTopic)
-        return "%s Meeting"%self.M.channel
+            title = "%s: %s" % (self.M.channel, self.M._meetingTopic)
+            if "meeting" not in self.M._meetingTopic.lower():
+                title += ' meeting'
+            return title
+        return "%s meeting" % self.M.channel
 
     def replacements(self):
         return {'pageTitle':self.pagetitle,
@@ -111,7 +108,7 @@ class _BaseWriter(object):
                 'fullLogs':self.M.config.basename+'.log.html',
                 'fullLogsFullURL':self.M.config.filename(url=True)+'.log.html',
                 'MeetBotInfoURL':self.M.config.MeetBotInfoURL,
-                'MeetBotVersion':MeetBotVersion(),
+                'MeetBotVersion':__version__,
              }
 
     def iterNickCounts(self):
@@ -1354,7 +1351,7 @@ class Moin(_BaseWriter):
     body_start = textwrap.dedent("""\
             == Meeting information ==
 
-             * %(pageTitleHeading)s, %(startdate)s at %(starttimeshort)s &mdash; %(endtimeshort)s %(timeZone)s.
+             * %(pageTitleHeading)s, started by %(owner)s, %(startdate)s at %(starttimeshort)s &mdash; %(endtimeshort)s %(timeZone)s.
              * Full logs at %(fullLogsFullURL)s""")
     def format(self, extension=None):
         """Return a MoinMoin formatted minutes summary."""
